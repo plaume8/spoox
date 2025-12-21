@@ -13,6 +13,18 @@ from spoox.interface.Interface import Interface
 
 
 class AgentSystem(ABC):
+    """
+    This class serves as the base for all agent system implementations.
+    It provides fundamental runtime functionality such as the human-agent interaction loop (see `start()`),
+    which requests user input and executes agents in response.
+    Additionally, it implements timeout management and comprehensive logging support.
+
+    Concrete agent system implementations just have to implement:
+
+    - `_build_agents()` that initializes all concreate single agents and their autogen message subscriptions.
+    - `_trigger_agents()` implementing the triggering of the agent flow given the latest user intput message, typically realized by publishing an autogen message.
+    - `get_state()` simple function returning the most important objects within a dictionary that should be logged and could be useful for post-analysis.
+    """
 
     def __init__(self, interface: Interface, model_client: ChatCompletionClient,
                  environment: Environment, timeout: int = 600, logs_dir: Path = Path.cwd()):
@@ -22,19 +34,18 @@ class AgentSystem(ABC):
         self.environment = environment
         self.timeout = timeout
 
+        self.runtime = SingleThreadedAgentRuntime()
+
         timestamp = datetime.now().strftime("%Y-%m-%d__%H-%M-%S")
         self.logs_dir = logs_dir / f"spoox_logs_{timestamp}"
         self.logs_dir.mkdir(parents=True)
+        self.usage_stats = dict()
+        self.init_usage_stats()
 
         # event passed to single agents to notify them when a timeout occurs
         self._timeout_event = asyncio.Event()
         # async function that contains the timeout countdown if started
         self._timeout_countdown = None
-
-        self.runtime = SingleThreadedAgentRuntime()
-
-        self.usage_stats = dict()
-        self.init_usage_stats()
 
     async def start(self) -> None:
         """
@@ -42,7 +53,6 @@ class AgentSystem(ABC):
         The agent system is initialized and enters an infinite loop that alternates between
         waiting for user input and executing the agents by calling self._trigger_agents.
         The system exits when the user enters 'q', 'exit', or 'stop'.
-        Furthermore, the system ensures that if a configured timeout is exceeded.
         """
 
         # start the agent system
@@ -68,7 +78,7 @@ class AgentSystem(ABC):
         # stop entirely
         await self.environment.stop()
         await self.runtime.close()
-        self.save_logs(stopped=True, exec_time_sec=time.time() - start_time)
+        self.save_logs(stopped=True, exec_time_sec=int(time.time() - start_time))
 
     def init_usage_stats(self) -> None:
         """
@@ -117,7 +127,7 @@ class AgentSystem(ABC):
 
     def save_logs(self, stopped: bool = False, exec_time_sec: int = 0) -> None:
         """
-        Store agent execution logs.
+        Store agent system logs, including usage_stats, get_state dictionary, the entire interface and some meta-data.
         Execution time is under 1 ms, making it suitable for frequent use during agent operation.
         """
 

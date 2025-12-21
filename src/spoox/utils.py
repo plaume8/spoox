@@ -6,9 +6,9 @@ from autogen_ext.models.openai import OpenAIChatCompletionClient
 from autogen_ext.models.ollama import OllamaChatCompletionClient
 
 from spoox.agents.AgentSystem import AgentSystem
-from spoox.agents.mas.StructuredFlow.AgentSystem_large import UbuntuMASGroupChatLarge
-from spoox.agents.mas.StructuredFlow.AgentSystem_medium import UbuntuMASGroupChatMedium
-from spoox.agents.mas.StructuredFlow.AgentSystem_small import UbuntuMASGroupChatSmall
+from spoox.agents.mas.StructuredFlow.AgentSystem_large import SpooxLarge
+from spoox.agents.mas.StructuredFlow.AgentSystem_medium import SpooxMedium
+from spoox.agents.mas.StructuredFlow.AgentSystem_small import SpooxSmall
 from spoox.agents.mas.Supervisor.AgentSystem_supervisor import UbuntuMASGroupChatSupervisor
 from spoox.agents.singleton.agent_system_singleton import SingletonAgentSystem
 from spoox.environment.Environment import Environment
@@ -57,11 +57,11 @@ def setup_agent_system(agent_id: str, model_client: ChatCompletionClient,
     if agent_id == "singleton":
         return SingletonAgentSystem(interface, model_client, environment, timeout, logs_dir)
     if agent_id == "mas-group-chat-s":
-        return UbuntuMASGroupChatSmall(interface, model_client, environment, timeout, logs_dir)
+        return SpooxSmall(interface, model_client, environment, timeout, logs_dir)
     if agent_id == "mas-group-chat-m":
-        return UbuntuMASGroupChatMedium(interface, model_client, environment, timeout, logs_dir)
+        return SpooxMedium(interface, model_client, environment, timeout, logs_dir)
     if agent_id == "mas-group-chat-l":
-        return UbuntuMASGroupChatLarge(interface, model_client, environment, timeout, logs_dir)
+        return SpooxLarge(interface, model_client, environment, timeout, logs_dir)
     if agent_id == "mas-supervisor":
         return UbuntuMASGroupChatSupervisor(interface, model_client, environment, timeout, logs_dir)
     raise ValueError(f"Selected agent '{agent_id}' not known.")

@@ -1,8 +1,6 @@
-import asyncio
-import time
 from pathlib import Path
 
-from autogen_core import SingleThreadedAgentRuntime, DefaultTopicId
+from autogen_core import DefaultTopicId
 from autogen_core import TypeSubscription
 from autogen_core.models import UserMessage, ChatCompletionClient
 
@@ -18,7 +16,6 @@ class SingletonAgentSystem(AgentSystem):
     This is the simplest agent system, consisting of a single agent.
     After the user submits a prompt, the singleton agent is executed, performs its work
     across multiple internal iterations, and terminates upon completion.
-    Once the process is finished, the user may submit a new follow-up prompt.
     """
 
     singleton_topic_type = "singleton"
