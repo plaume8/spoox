@@ -1,10 +1,12 @@
 import asyncio
 import json
 import pickle
+import time
 from abc import abstractmethod, ABC
 from datetime import datetime
 from pathlib import Path
 
+from autogen_core import SingleThreadedAgentRuntime
 from autogen_core.models import ChatCompletionClient
 from spoox.environment.Environment import Environment
 from spoox.interface.Interface import Interface
@@ -29,18 +31,44 @@ class AgentSystem(ABC):
         # async function that contains the timeout countdown if started
         self._timeout_countdown = None
 
+        self.runtime = SingleThreadedAgentRuntime()
+
         self.usage_stats = dict()
         self.init_usage_stats()
 
-    @abstractmethod
     async def start(self) -> None:
-        """Run the agent system."""
-        pass
+        """
+        Start and run the agent system.
+        The agent system is initialized and enters an infinite loop that alternates between
+        waiting for user input and executing the agents by calling self._trigger_agents.
+        The system exits when the user enters 'q', 'exit', or 'stop'.
+        Furthermore, the system ensures that if a configured timeout is exceeded.
+        """
 
-    @abstractmethod
-    def get_state(self) -> dict:
-        """Returns the current state of the agent system for logging and later analysis."""
-        pass
+        # start the agent system
+        await self.environment.start()
+        await self._build_agents()
+        self.save_logs()
+        start_time = time.time()
+
+        # user input and agent calling loop
+        while True:
+
+            user_input = self.interface.request_user_input("Query...")
+            if user_input in ['q', 'exit', 'stop']:
+                break
+
+            self.runtime.start()
+            await self._trigger_agents(user_input)
+            self._start_timeout_countdown()
+            await self.runtime.stop_when_idle()
+            self._cancel_timeout_countdown()
+            self.save_logs()
+
+        # stop entirely
+        await self.environment.stop()
+        await self.runtime.close()
+        self.save_logs(stopped=True, exec_time_sec=time.time() - start_time)
 
     def init_usage_stats(self) -> None:
         """
@@ -117,3 +145,27 @@ class AgentSystem(ABC):
         # save the interface logs in a pickle file
         with (self.logs_dir / f"interface.pkl").open("wb") as f:
             pickle.dump(self.interface, f)
+
+    @abstractmethod
+    async def _build_agents(self) -> None:
+        """
+        Initializing all agents, including all message subscriptions.
+        Must be implemented by the respective agent system implementation.
+        """
+        pass
+
+    @abstractmethod
+    async def _trigger_agents(self, user_input: str) -> None:
+        """
+        Triggers the execution flow of the agent system's single agents, given the latest user input.
+        Must be implemented by the respective agent system implementation.
+        """
+        pass
+
+    @abstractmethod
+    def get_state(self) -> dict:
+        """
+        Returns the current state of the agent system for logging and later analysis.
+        Must be implemented by the respective agent system implementation.
+        """
+        pass
