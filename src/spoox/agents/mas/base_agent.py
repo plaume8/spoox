@@ -8,19 +8,16 @@ from typing import List
 from autogen_core import RoutedAgent, message_handler, MessageContext, DefaultTopicId, FunctionCall
 from autogen_core.models import SystemMessage, LLMMessage, UserMessage, AssistantMessage, \
     FunctionExecutionResultMessage
-from ollama import ResponseError
 
 from spoox.agents.agent_system import AgentSystem
 from spoox.agents.mas.messages import GroupChatMessage, RequestToSpeak, GROUP_CHAT_TOPIC_TYPE
 from spoox.agents.mas.StructuredFlow.agents.prompts import get_AGENT_FAILED_GROUP_CHAT_MESSAGE
-from spoox.agents.errors import MaxOllamaRetrialsError, ModelClientError, MaxOnlyTextMessagesError, MaxIterationsError, \
+from spoox.agents.errors import ModelClientError, MaxOnlyTextMessagesError, MaxIterationsError, \
     AgentError
 
 # just in case the model is not using the tools or calling a next agent and only responses with a text
 # we have to make sure that there is a limit of "only text messages"
 MAX_ONLY_TEXT_MESSAGES = 3
-
-MAX_OLLAMA_RESPONSE_ERRORS_RETRIALS = 5
 
 MAX_MODEL_CLIENT_ERRORS_RETRIALS = 3
 
@@ -162,53 +159,24 @@ class BaseGroupChatAgent(RoutedAgent):
         one of the tool calls could call a next agent, if so a RequestToSpeak message is posted.
         """
 
+        # tracking consecutive model client errors and LLM "only-text" responses
         counter_only_text_messages = 0
-        ollama_response_errors = 0
         model_client_errors = 0
+
         for i in range(1, self._max_internal_iterations + 1):
 
-            # handling agent system timeout event
+            # checking agent system timeout event
             if self._return_next_time_possible_event.is_set():
                 return
 
-            # request llm
+            # logging
             self._save_logs_f()
             self._usage_stats['llm_calls_count'] += 1
-            try:
-                llm_res = await self._model_client.create(
-                    messages=self._chat_history,
-                    tools=self._tools,
-                    cancellation_token=ctx.cancellation_token,
-                )
-            except ResponseError as e:
-                ollama_response_errors += 1
-                self._usage_stats['ollama_response_error_count'] += 1  # todo remove
-                self._interface.print_highlight(str(e), "Ollama ResponseError")
-                if ollama_response_errors > MAX_OLLAMA_RESPONSE_ERRORS_RETRIALS:
-                    raise MaxOllamaRetrialsError(self.id.type, MAX_OLLAMA_RESPONSE_ERRORS_RETRIALS)
-                else:
-                    self._interface.print_shadow(
-                        "Ollama ResponseError -> retry (MAX_OLLAMA_RESPONSE_ERRORS_RETRIALS not yet reached)",
-                        "Ollama ResponseError")
-                    continue
-            except Exception as e:
-                model_client_errors += 1
-                self._usage_stats['model_client_exceptions'].append(str(e))
-                self._interface.print_highlight(str(e), "Model Client Error")
-                if model_client_errors > MAX_MODEL_CLIENT_ERRORS_RETRIALS:
-                    raise ModelClientError(self.id.type, MAX_MODEL_CLIENT_ERRORS_RETRIALS, e)
-                else:
-                    self._interface.print_shadow(
-                        "Model client error -> retry (MAX_MODEL_CLIENT_ERRORS_RETRIALS not yet reached)",
-                        "Model Client Error")
-                    start_time = time.time()
-                    await asyncio.sleep(60)
-                    print(f"short delay ofter model client exception: {(time.time() - start_time) / 60}")
-                    continue
-            self._usage_stats['prompt_tokens'].append(llm_res.usage.prompt_tokens)
-            self._usage_stats['completion_tokens'].append(llm_res.usage.completion_tokens)
-            ollama_response_errors = 0
-            model_client_errors = 0
+
+            # request llm
+            llm_res, model_client_errors = self._request_llm(ctx, model_client_errors)
+            if llm_res is None:
+                continue
 
             # add the response to session
             self._chat_history.append(
@@ -267,6 +235,29 @@ class BaseGroupChatAgent(RoutedAgent):
                 raise MaxOnlyTextMessagesError(self.id.type, MAX_ONLY_TEXT_MESSAGES)
 
         raise MaxIterationsError(self.id.type, self._max_internal_iterations)
+
+
+    async def _request_llm(self, ctx: MessageContext, model_client_errors: int):
+        """Invokes the model client (LLM) and handles any exception that occurs."""
+
+        try:
+            llm_res = await self._model_client.create(
+                messages=self._chat_history,
+                tools=self._tools,
+                cancellation_token=ctx.cancellation_token,
+            )
+        except Exception as e:
+            self._usage_stats['model_client_exceptions'].append(e)
+            self._interface.print_highlight(str(e), "Model Client Error (no retry)")
+            if model_client_errors >= MAX_MODEL_CLIENT_ERRORS_RETRIALS:
+                raise ModelClientError(self.id.type, MAX_MODEL_CLIENT_ERRORS_RETRIALS, e)
+            else:
+                self._interface.print_shadow(f"{str(e)}", "Model Client Error (retry)")
+                return None, model_client_errors + 1
+        # llm call success
+        self._usage_stats['prompt_tokens'].append(llm_res.usage.prompt_tokens)
+        self._usage_stats['completion_tokens'].append(llm_res.usage.completion_tokens)
+        return CreateResult, 0
 
     async def _send_group_chat_message(self, message: str):
         self._usage_stats['group_chat_message_lengths'].append(len(message))

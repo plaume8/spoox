@@ -30,10 +30,3 @@ class MaxIterationsError(AgentError):
         super().__init__(agent_id, f"Max agent iterations reached ({max_iterations})")
         self.max_iterations = max_iterations
 
-
-class MaxOllamaRetrialsError(AgentError):  # todo remove
-
-    def __init__(self, agent_id: str, max_ollama_retrials: int):
-        super().__init__(agent_id,
-                         f"Max ollama response errors retrials reached ({max_ollama_retrials})")
-        self.max_ollama_retrials = max_ollama_retrials
