@@ -7,8 +7,8 @@ from autogen_core import SingleThreadedAgentRuntime, DefaultTopicId
 from autogen_core import TypeSubscription
 from autogen_core.models import UserMessage, ChatCompletionClient
 
-from spoox.agents.AgentSystem import AgentSystem
-from spoox.agents.mas.Message import GroupChatMessage, RequestToSpeak
+from spoox.agents.agent_system import AgentSystem
+from spoox.agents.mas.messages import GroupChatMessage, RequestToSpeak
 from spoox.agents.mas.StructuredFlow.agents.ApproverAgent import ApproverAgent
 from spoox.agents.mas.StructuredFlow.agents.ExplorerAgent import ExplorerAgent
 from spoox.agents.mas.StructuredFlow.agents.SubTaskSolverAgent import SubTaskSolverAgent
@@ -33,15 +33,10 @@ class UbuntuMASGroupChatLarge(AgentSystem):
     summarizer_topic_type = "summarizer"
 
     def __init__(self, interface: Interface, model_client: ChatCompletionClient,
-                 environment: Environment, timeout: int = 3600, logs_dir: Path = Path.cwd()):
+                 environment: Environment, timeout: int = 600, logs_dir: Path = Path.cwd()):
 
         super().__init__(interface, model_client, environment, timeout, logs_dir)
-
         self.runtime = SingleThreadedAgentRuntime()
-
-        # create timeout event to tell agents to return next the time possible
-        self._timeout_event = None
-
         # agents
         self._explorer_agent = None
         self._sub_task_planner_agent = None
@@ -201,8 +196,6 @@ class UbuntuMASGroupChatLarge(AgentSystem):
 
     async def start(self):
 
-        if self._timeout_event is None:
-            self._timeout_event = asyncio.Event()
         await self.environment.start()
         await self.build_mas()
         self.save_logs()
@@ -212,40 +205,24 @@ class UbuntuMASGroupChatLarge(AgentSystem):
         while True:
 
             user_input = self.interface.request_user_input("Query...")
-
-            # exit
             if user_input in ['q', 'exit', 'stop']:
                 break
-
-            # reset stop signal
-            if self._timeout_event.is_set():
-                self._timeout_event.clear()
-
-            # send user input to the group chat and trigger explorer agent
             self.runtime.start()
             await self.runtime.publish_message(
                 message=GroupChatMessage(nonce=str(uuid.uuid4()), body=UserMessage(content=user_input, source="User")),
                 topic_id=DefaultTopicId(type=self.group_chat_topic_type)
             )
-            await asyncio.sleep(
-                0.1)  # ensuring the group msg can be observed before the RTS (I think it is not required - but not sure...)
+            # ensuring the group msg can be observed before the RTS (I think it is not required - but not sure...) # todo
+            await asyncio.sleep(0.1)
             await self.runtime.publish_message(
                 message=RequestToSpeak(nonce=str(uuid.uuid4())),
                 topic_id=DefaultTopicId(type=self.explorer_topic_type)
             )
 
-            # wait until the agents are complete (runtime is idle)
-            # if we just stop the runtime, but agents are still working on it -> autogen runtime will raise ValueError
-            # therefore we use an event to signal all agent to stop the next time possible
-            async def _timeout():
-                await asyncio.sleep(self.timeout)
-                error_message = "Agent System waiting for runtime.stop_when_idle timeout error"
-                self.interface.print_highlight(error_message, "TimeoutError")
-                self.usage_stats["agent_errors"].append(("TimeoutError", error_message))
-                self._timeout_event.set()
-            timeout_task = asyncio.create_task(_timeout())
+            self._start_timeout_countdown()
             await self.runtime.stop_when_idle()
-            timeout_task.cancel()
+            self._cancel_timeout_countdown()
+            self.save_logs()
 
         # stop entirely
         await self.environment.stop()
@@ -253,19 +230,8 @@ class UbuntuMASGroupChatLarge(AgentSystem):
         # final logs
         self.save_logs(stopped=True, exec_time_sec=time.time() - start_time)
 
-    def init_usage_stats(self):
-        self.usage_stats['llm_calls_count'] = 0
-        self.usage_stats['tool_call_counts'] = dict()
-        self.usage_stats['tool_calls'] = []
-        self.usage_stats['ollama_response_error_count'] = 0
-        self.usage_stats['model_client_exceptions'] = []
-        self.usage_stats['agent_errors'] = []
-        self.usage_stats['prompt_tokens'] = []
-        self.usage_stats['completion_tokens'] = []
-        self.usage_stats['next_agent_calling_chain'] = []
-        self.usage_stats['group_chat_message_lengths'] = []
-
     def get_state(self):
+        """Returns the current state of the agent system for logging and later analysis."""
         return {
             'explorer_agent': self._explorer_agent,
             'sub_task_planner_agent': self._sub_task_planner_agent,

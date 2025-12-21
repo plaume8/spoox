@@ -162,7 +162,7 @@ class BaseGroupChatAgent(RoutedAgent):
                 )
             except ResponseError as e:
                 ollama_response_errors += 1
-                self._usage_stats['ollama_response_error_count'] += 1
+                self._usage_stats['ollama_response_error_count'] += 1  # todo remove
                 self._interface.print_highlight(str(e), "Ollama ResponseError")
                 if ollama_response_errors > MAX_OLLAMA_RESPONSE_ERRORS_RETRIALS:
                     raise MaxOllamaRetrialsError(self.id.type, MAX_OLLAMA_RESPONSE_ERRORS_RETRIALS)

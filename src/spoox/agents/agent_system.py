@@ -1,3 +1,4 @@
+import asyncio
 import json
 import pickle
 from abc import abstractmethod, ABC
@@ -12,7 +13,8 @@ from spoox.interface.Interface import Interface
 class AgentSystem(ABC):
 
     def __init__(self, interface: Interface, model_client: ChatCompletionClient,
-                 environment: Environment, timeout: int = 3600, logs_dir: Path = Path.cwd()):
+                 environment: Environment, timeout: int = 600, logs_dir: Path = Path.cwd()):
+
         self.interface = interface
         self.model_client = model_client
         self.environment = environment
@@ -21,6 +23,11 @@ class AgentSystem(ABC):
         timestamp = datetime.now().strftime("%Y-%m-%d__%H-%M-%S")
         self.logs_dir = logs_dir / f"spoox_logs_{timestamp}"
         self.logs_dir.mkdir(parents=True)
+
+        # event passed to single agents to notify them when a timeout occurs
+        self._timeout_event = asyncio.Event()
+        # async function that contains the timeout countdown if started
+        self._timeout_countdown = None
 
         self.usage_stats = dict()
         self.init_usage_stats()
@@ -31,12 +38,54 @@ class AgentSystem(ABC):
         pass
 
     @abstractmethod
-    def init_usage_stats(self) -> None:
+    def get_state(self) -> dict:
+        """Returns the current state of the agent system for logging and later analysis."""
         pass
 
-    @abstractmethod
-    def get_state(self) -> dict:
-        pass
+    def init_usage_stats(self) -> None:
+        """
+        Initializes a shared dictionary for collecting interesting statistics.
+        This dictionary is provided to all single agents to enable a centralized collection.
+        """
+
+        self.usage_stats['llm_calls_count'] = 0
+        self.usage_stats['tool_call_counts'] = dict()
+        self.usage_stats['tool_calls'] = []
+        self.usage_stats['model_client_exceptions'] = []
+        self.usage_stats['agent_errors'] = []
+        self.usage_stats['prompt_tokens'] = []
+        self.usage_stats['completion_tokens'] = []
+        self.usage_stats['next_agent_calling_chain'] = []
+        self.usage_stats['group_chat_message_lengths'] = []
+
+    def _cancel_timeout_countdown(self) -> None:
+        """Cancels the timeout event without triggering or restarting the timeout countdown."""
+
+        if self._timeout_countdown is not None and not self._timeout_countdown.done():
+            self._timeout_countdown.cancel()
+        self._timeout_countdown = None
+
+        if self._timeout_event.is_set():
+            self._timeout_event.clear()
+
+    def _start_timeout_countdown(self) -> None:
+        """
+        Starts a timeout countdown for self.timeout seconds. Once the timeout is reached, self.timeout_event is set.
+        The self.timeout_event is shared with all individual agents, allowing them to terminate their execution
+        gracefully once the event is set. Directly stopping the runtime while agents are still running
+        can result in a ValueError being raised by the autogen runtime. To avoid this, an event is used to notify
+        all agents to stop as soon as possible instead of abruptly terminating execution.
+        """
+
+        async def _timeout():
+            await asyncio.sleep(self.timeout)
+            error_message = f"Agent system timeout after {self.timeout}s."
+            self.interface.print_highlight(error_message, "TimeoutError")
+            self.usage_stats["agent_errors"].append(("TimeoutError", error_message))
+            self._timeout_event.set()
+
+        self._cancel_timeout_countdown()
+        self._timeout_countdown = asyncio.create_task(_timeout())
 
     def save_logs(self, stopped: bool = False, exec_time_sec: int = 0) -> None:
         """

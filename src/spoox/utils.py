@@ -51,7 +51,7 @@ def setup_model_client(model_id: str, docker_access: bool = False) -> ChatComple
 
 def setup_agent_system(agent_id: str, model_client: ChatCompletionClient,
                        environment: Environment, interface: Interface,
-                       timeout: int = 3600, logs_dir: Path = Path.cwd()) -> AgentSystem:
+                       timeout: int = 600, logs_dir: Path = Path.cwd()) -> AgentSystem:
     """Based on the provided 'agent_id', create the corresponding agent system instance."""
 
     if agent_id == "singleton":

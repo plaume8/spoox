@@ -16,19 +16,18 @@ from spoox.interface.Interface import Interface
 class SingletonAgentSystem(AgentSystem):
     """
     This is the simplest agent system, consisting of a single agent.
-    After the user submits a prompt, the agent is executed, performs its work across multiple internal iterations,
-    and terminates upon completion. Once the process is finished, the user may submit a new follow-up prompt.
+    After the user submits a prompt, the singleton agent is executed, performs its work
+    across multiple internal iterations, and terminates upon completion.
+    Once the process is finished, the user may submit a new follow-up prompt.
     """
 
     singleton_topic_type = "singleton"
 
     def __init__(self, interface: Interface, model_client: ChatCompletionClient,
-                 environment: Environment, timeout: int = 3600, logs_dir: Path = Path.cwd()):
+                 environment: Environment, timeout: int = 600, logs_dir: Path = Path.cwd()):
 
         super().__init__(interface, model_client, environment, timeout, logs_dir)
         self.runtime = SingleThreadedAgentRuntime()
-        # timeout event that signals agents to return next time possible
-        self._timeout_event = None
         self._singleton_agent = None
 
     async def _build_agent(self):
@@ -59,8 +58,6 @@ class SingletonAgentSystem(AgentSystem):
         """
 
         # agent system setup
-        if self._timeout_event is None:
-            self._timeout_event = asyncio.Event()
         await self.environment.start()
         await self._build_agent()
         self.save_logs()
@@ -68,10 +65,6 @@ class SingletonAgentSystem(AgentSystem):
 
         # user input and agent call loop
         while True:
-
-            # reset timeout event
-            if self._timeout_event.is_set():
-                self._timeout_event.clear()
 
             # request user intput and trigger singleton agent
             user_input = self.interface.request_user_input("Query...")
@@ -83,18 +76,9 @@ class SingletonAgentSystem(AgentSystem):
                 topic_id=DefaultTopicId(type=self.singleton_topic_type),
             )
 
-            # wait until the agents are complete (runtime is idle);
-            # if we just stop the runtime, but agents are still working on it, autogen runtime will raise a ValueError;
-            # therefore, we use an event to signal all agents to stop the next time possible
-            async def _timeout():
-                await asyncio.sleep(self.timeout)
-                error_message = "Agent System waiting for runtime.stop_when_idle timeout error"
-                self.interface.print_highlight(error_message, "TimeoutError")
-                self.usage_stats["agent_errors"].append(("TimeoutError", error_message))
-                self._timeout_event.set()
-            timeout_task = asyncio.create_task(_timeout())
+            self._start_timeout_countdown()
             await self.runtime.stop_when_idle()
-            timeout_task.cancel()
+            self._cancel_timeout_countdown()
             self.save_logs()
 
         # stop entirely
@@ -103,17 +87,8 @@ class SingletonAgentSystem(AgentSystem):
         # final logs
         self.save_logs(stopped=True, exec_time_sec=time.time() - start_time)
 
-    def init_usage_stats(self):
-        self.usage_stats['llm_calls_count'] = 0
-        self.usage_stats['tool_call_counts'] = dict()
-        self.usage_stats['tool_calls'] = []
-        self.usage_stats['ollama_response_error_count'] = 0
-        self.usage_stats['model_client_exceptions'] = []
-        self.usage_stats['agent_errors'] = []
-        self.usage_stats['prompt_tokens'] = []
-        self.usage_stats['completion_tokens'] = []
-
     def get_state(self):
+        """Returns the current state of the agent system for logging and later analysis."""
         return {
             'single_agent_type': self._singleton_agent
         }
