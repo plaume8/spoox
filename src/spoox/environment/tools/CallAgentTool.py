@@ -95,7 +95,9 @@ class CallAgentTool(
                                      body=UserMessage(content=info_message, source=self._sender_agent_id)),
             topic_id=DefaultTopicId(type=GROUP_CHAT_TOPIC_TYPE),
         )
-        await asyncio.sleep(0.1)  # ensuring the group msg can be observed before the RTS
+        # 0.1 delay to ensure the GroupChatMessage can be observed before the RequestToSpeak
+        # (I think it is not required, however, it certainly does not hurt)
+        await asyncio.sleep(0.1)
         await self._publish_message(RequestToSpeak(nonce=str(uuid.uuid4())), DefaultTopicId(type=agent_tag))
 
         return CallAgentResult(success=True, called_agent_id=agent_tag)

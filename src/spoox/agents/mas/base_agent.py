@@ -33,6 +33,7 @@ class BaseGroupChatAgent(RoutedAgent):
 
 
     """
+
     def __init__(
             self,
             description: str,
@@ -102,21 +103,21 @@ class BaseGroupChatAgent(RoutedAgent):
     @message_handler
     async def handle_request_to_speak(self, message: RequestToSpeak, ctx: MessageContext) -> None:
         """
-        if the agent is requested to speak, the llm is triggered;
-        after responding, the next selected agent is called by posting a new RequestToSpeak message.
+        Agent is requested to speak: parts of its internal state are reset, and the internal execution loop is started.
+        Furthermore, if the agent loop throws errors, they are caught and logged, and a fallback mechanism is triggered.
         """
 
-        # make sure the environment is reset (no influence of previous agents)
+        # ensures the env is fully reset to prevent any influence from previous agents that used the same env
         if self._environment:
             await self._environment.reset()
 
-        # reset chat history to group chat history only
+        # reset chat history to group chat messages only; all previous internal iteration messages are discarded
         if self._reset_on_request_to_speak:
             self._chat_history = copy.deepcopy(self._chat_history_group_chat_only)
-            self._interface.print_logging("reset to group chat history only on request to speak",
-                                          f"logging - {self.id.type} - reset")
+            self._interface.print_logging(
+                "reset to group chat history only on request to speak", f"logging - {self.id.type} - reset")
 
-        # add to agents own history -> system message to adopt persona now
+        # add a system message that instructs the model to adopt this agent's persona
         self._chat_history.append(
             UserMessage(
                 content=f"Transferred to {self.id.type.capitalize()} agent, adopt the persona immediately.",
@@ -124,34 +125,42 @@ class BaseGroupChatAgent(RoutedAgent):
             )
         )
 
-        # logging
+        # logging  # todo simply remove these two lines after final testing
         logging_chat_hist = '| -> ' + ' -> '.join([str(h.content)[:40].replace('\n', '') for h in self._chat_history])
         self._interface.print_logging(logging_chat_hist, f"logging - {self.id.type} - chat history")
 
-        # run agent loop; if agent loop fails, the agent simply not generates any response
+        # run the agent's internal loop;
+        # if agent loop fails, no final group chat message is generated, and the fallback agent is called if available
         try:
             await self.agent_loop(ctx)
             return
         except AgentError as e:
             self._interface.print_highlight(str(e), "Agent Error")
-            self._usage_stats["agent_errors"].append((type(e).__name__, str(e)))
+            self._usage_stats["agent_errors"].append(e)
         except Exception as e:
             self._interface.print_highlight(str(e), "Unexpected Error")
-            self._usage_stats["agent_errors"].append((type(e).__name__, str(e)))
+            self._usage_stats["agent_errors"].append(e)
 
-        # check if fallback
+        # fallback mechanism
         if self._fallback_agent_topic_type:
             failure_message = get_AGENT_FAILED_GROUP_CHAT_MESSAGE(self.id.type, self._fallback_agent_topic_type)
             self._interface.print_shadow(failure_message)
             await self._send_group_chat_message(failure_message)
-            await asyncio.sleep(
-                0.1)  # ensuring the group msg can be observed before the RTS (I think it is not required - but not sure...)
+            # 0.1 delay to ensure the GroupChatMessage can be observed before the RequestToSpeak
+            # (I think it is not required, however, it certainly does not hurt)
+            await asyncio.sleep(0.1)
             await self._send_request_to_speak(self._fallback_agent_topic_type)
 
-        # if error and no fallback just return -> no next agent will be triggered -> autogen runtime exits
+        # if error and no fallback -> just return -> no next agent will be triggered -> autogen runtime exits
 
     async def agent_loop(self, ctx: MessageContext):
         """Run llm over and over again until the agent is finished."""
+        """
+        if the agent is requested to speak, the llm is triggered;
+        if the response includes the 'finished_tag' and no tool calls, the answer is printed and the agent exits;
+        if the response contains tool calls, the tools are executed, and the llm is triggered again with the results;
+        one of the tool calls could call a next agent, if so a RequestToSpeak message is posted.
+        """
 
         counter_only_text_messages = 0
         ollama_response_errors = 0
@@ -189,7 +198,9 @@ class BaseGroupChatAgent(RoutedAgent):
                 if model_client_errors > MAX_MODEL_CLIENT_ERRORS_RETRIALS:
                     raise ModelClientError(self.id.type, MAX_MODEL_CLIENT_ERRORS_RETRIALS, e)
                 else:
-                    self._interface.print_shadow("Model client error -> retry (MAX_MODEL_CLIENT_ERRORS_RETRIALS not yet reached)", "Model Client Error")
+                    self._interface.print_shadow(
+                        "Model client error -> retry (MAX_MODEL_CLIENT_ERRORS_RETRIALS not yet reached)",
+                        "Model Client Error")
                     start_time = time.time()
                     await asyncio.sleep(60)
                     print(f"short delay ofter model client exception: {(time.time() - start_time) / 60}")

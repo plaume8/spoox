@@ -55,25 +55,17 @@ class SingletonAgent(RoutedAgent):
 
     @message_handler
     async def handle_request_to_speak(self, message: PublicMessage, ctx: MessageContext) -> None:
-        """
-        if the agent is requested to speak, the llm is triggered;
-        if the response includes the 'finished_tag' and no tool calls, the answer is printed and the agent exits;
-        if the response contains tool calls, the tools are executed, and the llm is triggered again with the results;
-        one of the tool calls could call a next agent, if so a RequestToSpeak message is posted.
-        """
+        """Agent is requested to speak: internal execution loop is started."""
 
-        # add the user message to session
-        self._chat_history.append(message.body)
-
-        # run agent loop; if agent loop fails, the agent simply not generates any response
         try:
+            self._chat_history.append(message.body)
             await self.agent_loop(ctx)
         except AgentError as e:
             self._interface.print_highlight(str(e), "Agent Error")
-            self._usage_stats["agent_errors"].append((type(e).__name__, str(e)))
+            self._usage_stats["agent_errors"].append(e)
         except Exception as e:
             self._interface.print_highlight(str(e), "Unexpected Error")
-            self._usage_stats["agent_errors"].append((type(e).__name__, str(e)))
+            self._usage_stats["agent_errors"].append(e)
 
     async def agent_loop(self, ctx: MessageContext):
         """Run llm over and over again until the agent is finished."""
