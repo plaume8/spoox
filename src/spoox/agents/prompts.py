@@ -1,6 +1,6 @@
 
 
-# basic prompt blocks used by the MAS and singleton agents
+# basic prompt blocks used by most agents
 
 
 MORE_OPERATING_RULES = [

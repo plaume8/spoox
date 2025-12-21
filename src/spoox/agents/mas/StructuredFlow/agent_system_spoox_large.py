@@ -7,7 +7,7 @@ from autogen_core import TypeSubscription
 from autogen_core.models import UserMessage, ChatCompletionClient
 
 from spoox.agents.agent_system import AgentSystem
-from spoox.agents.mas.messages import GroupChatMessage, RequestToSpeak
+from spoox.agents.mas.messages import GroupChatMessage, RequestToSpeak, GROUP_CHAT_TOPIC_TYPE
 from spoox.agents.mas.StructuredFlow.agents.ApproverAgent import ApproverAgent
 from spoox.agents.mas.StructuredFlow.agents.ExplorerAgent import ExplorerAgent
 from spoox.agents.mas.StructuredFlow.agents.SubTaskSolverAgent import SubTaskSolverAgent
@@ -27,7 +27,6 @@ class SpooxLarge(AgentSystem):
     """
 
     # all topic types
-    group_chat_topic_type = "groupchat"
     explorer_topic_type = "explorer"
     sub_task_planner_topic_type = "subtaskplanner"
     sub_task_solver_topic_type = "subtasksolver"
@@ -56,118 +55,82 @@ class SpooxLarge(AgentSystem):
             self.explorer_topic_type,
             lambda: ExplorerAgent(
                 topic_type=self.explorer_topic_type,
-                group_chat_topic_type=self.group_chat_topic_type,
-                environment=self.environment,
-                model_client=self.model_client,
-                interface=self.interface,
-                usage_stats=self.usage_stats,
-                save_logs_f=self.save_logs,
+                agent_system=self,
                 next_agent_topic=self.sub_task_planner_topic_type,
-                return_next_time_possible_event=self._timeout_event,
                 support_feedback=True,
             ),
         )
         await self.runtime.add_subscription(
             TypeSubscription(topic_type=self.explorer_topic_type, agent_type=self._explorer_agent.type))
         await self.runtime.add_subscription(
-            TypeSubscription(topic_type=self.group_chat_topic_type, agent_type=self._explorer_agent.type))
+            TypeSubscription(topic_type=GROUP_CHAT_TOPIC_TYPE, agent_type=self._explorer_agent.type))
 
         self._sub_task_planner_agent = await SubTaskPlannerAgent.register(
             self.runtime,
             self.sub_task_planner_topic_type,
             lambda: SubTaskPlannerAgent(
                 topic_type=self.sub_task_planner_topic_type,
-                group_chat_topic_type=self.group_chat_topic_type,
-                environment=self.environment,
-                model_client=self.model_client,
-                interface=self.interface,
-                usage_stats=self.usage_stats,
-                save_logs_f=self.save_logs,
+                agent_system=self,
                 explorer_topic_type=self.explorer_topic_type,
                 solver_topic_type=self.sub_task_solver_topic_type,
                 tester_topic_type=self.tester_topic_type,
-                return_next_time_possible_event=self._timeout_event,
             ),
         )
         await self.runtime.add_subscription(
             TypeSubscription(topic_type=self.sub_task_planner_topic_type, agent_type=self._sub_task_planner_agent.type))
         await self.runtime.add_subscription(
-            TypeSubscription(topic_type=self.group_chat_topic_type, agent_type=self._sub_task_planner_agent.type))
+            TypeSubscription(topic_type=GROUP_CHAT_TOPIC_TYPE, agent_type=self._sub_task_planner_agent.type))
 
         self._sub_task_solver_agent = await SubTaskSolverAgent.register(
             self.runtime,
             self.sub_task_solver_topic_type,
             lambda: SubTaskSolverAgent(
                 topic_type=self.sub_task_solver_topic_type,
-                group_chat_topic_type=self.group_chat_topic_type,
-                environment=self.environment,
-                model_client=self.model_client,
-                interface=self.interface,
-                usage_stats=self.usage_stats,
-                save_logs_f=self.save_logs,
+                agent_system=self,
                 planner_agent_topic_type=self.sub_task_planner_topic_type,
-                return_next_time_possible_event=self._timeout_event,
             ),
         )
         await self.runtime.add_subscription(
             TypeSubscription(topic_type=self.sub_task_solver_topic_type, agent_type=self._sub_task_solver_agent.type))
         await self.runtime.add_subscription(
-            TypeSubscription(topic_type=self.group_chat_topic_type, agent_type=self._sub_task_solver_agent.type))
+            TypeSubscription(topic_type=GROUP_CHAT_TOPIC_TYPE, agent_type=self._sub_task_solver_agent.type))
 
         self._tester_agent = await TesterAgent.register(
             self.runtime,
             self.tester_topic_type,
             lambda: TesterAgent(
                 topic_type=self.tester_topic_type,
-                group_chat_topic_type=self.group_chat_topic_type,
-                environment=self.environment,
-                model_client=self.model_client,
-                interface=self.interface,
-                usage_stats=self.usage_stats,
-                save_logs_f=self.save_logs,
+                agent_system=self,
                 previous_agent_topic_type=self.refiner_topic_type,
                 next_agent_topic_type=self.refiner_topic_type,
-                return_next_time_possible_event=self._timeout_event,
             ),
         )
         await self.runtime.add_subscription(
             TypeSubscription(topic_type=self.tester_topic_type, agent_type=self._tester_agent.type))
         await self.runtime.add_subscription(
-            TypeSubscription(topic_type=self.group_chat_topic_type, agent_type=self._tester_agent.type))
+            TypeSubscription(topic_type=GROUP_CHAT_TOPIC_TYPE, agent_type=self._tester_agent.type))
 
         self._refiner_agent = await RefinerAgent.register(
             self.runtime,
             self.refiner_topic_type,
             lambda: RefinerAgent(
                 topic_type=self.refiner_topic_type,
-                group_chat_topic_type=self.group_chat_topic_type,
-                environment=self.environment,
-                model_client=self.model_client,
-                interface=self.interface,
-                usage_stats=self.usage_stats,
-                save_logs_f=self.save_logs,
+                agent_system=self,
                 tester_topic_type=self.tester_topic_type,
                 approver_topic_type=self.approver_topic_type,
-                return_next_time_possible_event=self._timeout_event,
             ),
         )
         await self.runtime.add_subscription(
             TypeSubscription(topic_type=self.refiner_topic_type, agent_type=self._refiner_agent.type))
         await self.runtime.add_subscription(
-            TypeSubscription(topic_type=self.group_chat_topic_type, agent_type=self._refiner_agent.type))
+            TypeSubscription(topic_type=GROUP_CHAT_TOPIC_TYPE, agent_type=self._refiner_agent.type))
 
         self._approver_agent = await ApproverAgent.register(
             self.runtime,
             self.approver_topic_type,
             lambda: ApproverAgent(
                 topic_type=self.approver_topic_type,
-                group_chat_topic_type=self.group_chat_topic_type,
-                environment=self.environment,
-                model_client=self.model_client,
-                interface=self.interface,
-                usage_stats=self.usage_stats,
-                save_logs_f=self.save_logs,
-                return_next_time_possible_event=self._timeout_event,
+                agent_system=self,
                 solver_agent_topic_type=self.refiner_topic_type,
                 test_agent_topic_type=self.tester_topic_type,
                 next_agent_topic_type=self.summarizer_topic_type,
@@ -176,32 +139,27 @@ class SpooxLarge(AgentSystem):
         await self.runtime.add_subscription(
             TypeSubscription(topic_type=self.approver_topic_type, agent_type=self._approver_agent.type))
         await self.runtime.add_subscription(
-            TypeSubscription(topic_type=self.group_chat_topic_type, agent_type=self._approver_agent.type))
+            TypeSubscription(topic_type=GROUP_CHAT_TOPIC_TYPE, agent_type=self._approver_agent.type))
 
         self._summarizer_agent = await SummarizerAgent.register(
             self.runtime,
             self.summarizer_topic_type,
             lambda: SummarizerAgent(
                 topic_type=self.summarizer_topic_type,
-                group_chat_topic_type=self.group_chat_topic_type,
-                model_client=self.model_client,
-                interface=self.interface,
-                usage_stats=self.usage_stats,
-                save_logs_f=self.save_logs,
-                return_next_time_possible_event=self._timeout_event,
+                agent_system=self,
             ),
         )
         await self.runtime.add_subscription(
             TypeSubscription(topic_type=self.summarizer_topic_type, agent_type=self._summarizer_agent.type))
         await self.runtime.add_subscription(
-            TypeSubscription(topic_type=self.group_chat_topic_type, agent_type=self._summarizer_agent.type))
+            TypeSubscription(topic_type=GROUP_CHAT_TOPIC_TYPE, agent_type=self._summarizer_agent.type))
 
     async def _trigger_agents(self, user_input: str) -> None:
         """Triggers the execution flow of the agent system's single agents, given the latest user input."""
 
         await self.runtime.publish_message(
             message=GroupChatMessage(nonce=str(uuid.uuid4()), body=UserMessage(content=user_input, source="User")),
-            topic_id=DefaultTopicId(type=self.group_chat_topic_type)
+            topic_id=DefaultTopicId(type=GROUP_CHAT_TOPIC_TYPE)
         )
         # 0.1 delay to ensure the GroupChatMessage can be observed before the RequestToSpeak
         # (I think it is not required, however, it certainly does not hurt)

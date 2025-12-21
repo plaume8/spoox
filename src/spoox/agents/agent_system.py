@@ -47,6 +47,10 @@ class AgentSystem(ABC):
         # async function that contains the timeout countdown if started
         self._timeout_countdown = None
 
+    @property
+    def timeout_event(self) -> asyncio.Event:
+        return self._timeout_event
+
     async def start(self) -> None:
         """
         Start and run the agent system.

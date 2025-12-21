@@ -9,7 +9,7 @@ from proxytypes import func
 from pydantic import BaseModel, Field, model_serializer
 from typing_extensions import Self
 
-from spoox.agents.mas.Message import GroupChatMessage, RequestToSpeak
+from spoox.agents.mas.messages import GroupChatMessage, RequestToSpeak, GROUP_CHAT_TOPIC_TYPE
 
 _PUBLISH_MESSAGE_FUNCS: dict[str, func] = {}
 
@@ -61,7 +61,7 @@ class CallAgentTool(
 
     component_config_schema = CallAgentConfig
 
-    def __init__(self, known_agent_tags: list[str], sender_agent_id: str, group_chat_topic_type: str) -> None:
+    def __init__(self, known_agent_tags: list[str], sender_agent_id: str) -> None:
         super().__init__(
             CallAgentInput,
             CallAgentResult,
@@ -71,7 +71,6 @@ class CallAgentTool(
         )
         self._known_agent_tags = [t.lower() for t in known_agent_tags]
         self._sender_agent_id = sender_agent_id.lower()
-        self._group_chat_topic_type = group_chat_topic_type
         self._publish_message: func = get_publish_message_funct(sender_agent_id)
 
     async def run(self, args: CallAgentInput, cancellation_token: CancellationToken = None) -> CallAgentResult:
@@ -94,7 +93,7 @@ class CallAgentTool(
         await self._publish_message(
             message=GroupChatMessage(nonce=str(uuid.uuid4()),
                                      body=UserMessage(content=info_message, source=self._sender_agent_id)),
-            topic_id=DefaultTopicId(type=self._group_chat_topic_type),
+            topic_id=DefaultTopicId(type=GROUP_CHAT_TOPIC_TYPE),
         )
         await asyncio.sleep(0.1)  # ensuring the group msg can be observed before the RTS
         await self._publish_message(RequestToSpeak(nonce=str(uuid.uuid4())), DefaultTopicId(type=agent_tag))
@@ -103,9 +102,9 @@ class CallAgentTool(
 
     def _to_config(self) -> CallAgentConfig:
         """Convert current instance to config object"""
-        return CallAgentConfig(known_agent_tags=self._known_agent_tags, sender_agent_id=self._sender_agent_id, group_chat_topic_type=self._group_chat_topic_type)
+        return CallAgentConfig(known_agent_tags=self._known_agent_tags, sender_agent_id=self._sender_agent_id)
 
     @classmethod
     def _from_config(cls, config: CallAgentConfig) -> Self:
         """Create instance from config object"""
-        return cls(known_agent_tags=config.known_agent_tags, sender_agent_id=config.sender_agent_id, group_chat_topic_type=config.group_chat_topic_type)
+        return cls(known_agent_tags=config.known_agent_tags, sender_agent_id=config.sender_agent_id)

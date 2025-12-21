@@ -7,6 +7,7 @@ from autogen_core.models import SystemMessage, LLMMessage, ChatCompletionClient,
     FunctionExecutionResultMessage
 from ollama import ResponseError
 
+from spoox.agents.agent_system import AgentSystem
 from spoox.agents.singleton.messages import PublicMessage
 from spoox.agents.errors import MaxOllamaRetrialsError, ModelClientError, MaxOnlyTextMessagesError, MaxIterationsError, \
     AgentError
@@ -29,27 +30,24 @@ class SingletonAgent(RoutedAgent):
 
     def __init__(
             self,
-            environment: Environment,
-            model_client: ChatCompletionClient,
-            interface: Interface,
-            usage_stats: dict,
-            save_logs_f: Callable,
-            return_next_time_possible_event: asyncio.Event,
+            agent_system: AgentSystem,
             max_internal_iterations: int = 100,
     ) -> None:
 
         super().__init__(description="Single agent responsible for handling and completing the entire task.")
-        self._environment = environment
-        self._model_client = model_client
-        self._interface = interface
-        self._usage_stats = usage_stats
-        self._save_logs_f = save_logs_f
-        self._return_next_time_possible_event = return_next_time_possible_event
+        self._environment = agent_system.environment
+        self._model_client = agent_system.model_client
+        self._interface = agent_system.interface
+        self._usage_stats = agent_system.usage_stats
+        self._save_logs_f = agent_system.save_logs
+        self._return_next_time_possible_event = agent_system.timeout_event
         self._max_internal_iterations = max_internal_iterations
 
-        system_message = SystemMessage(content=get_SINGLETON_SYSTEM_PROMPT(self.finished_tag, environment.get_additional_tool_descriptions(self)))
+        system_message = SystemMessage(content=get_SINGLETON_SYSTEM_PROMPT(
+            self.finished_tag, self._environment.get_additional_tool_descriptions(self)
+        ))
         self._chat_history: List[LLMMessage] = [system_message]
-        self._tools = environment.get_tools(self)
+        self._tools = self._environment.get_tools(self)
 
         for t in self._tools:
             self._interface.print_logging(str(t.schema), f"logging - {self.id.type} - tool_schema")

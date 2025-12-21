@@ -32,14 +32,7 @@ class SingletonAgentSystem(AgentSystem):
         self._singleton_agent = await SingletonAgent.register(
             self.runtime,
             self.singleton_topic_type,
-            lambda: SingletonAgent(
-                environment=self.environment,
-                model_client=self.model_client,
-                interface=self.interface,
-                usage_stats=self.usage_stats,
-                save_logs_f=self.save_logs,
-                return_next_time_possible_event=self._timeout_event,
-            ),
+            lambda: SingletonAgent(self)
         )
         await self.runtime.add_subscription(
             TypeSubscription(topic_type=self.singleton_topic_type, agent_type=self._singleton_agent.type))

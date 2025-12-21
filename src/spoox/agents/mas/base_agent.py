@@ -3,19 +3,18 @@ import re
 import time
 import uuid
 import copy
-from typing import List, Callable
+from typing import List
 
 from autogen_core import RoutedAgent, message_handler, MessageContext, DefaultTopicId, FunctionCall
-from autogen_core.models import SystemMessage, LLMMessage, UserMessage, ChatCompletionClient, AssistantMessage, \
+from autogen_core.models import SystemMessage, LLMMessage, UserMessage, AssistantMessage, \
     FunctionExecutionResultMessage
 from ollama import ResponseError
 
-from spoox.agents.mas.messages import GroupChatMessage, RequestToSpeak
-from spoox.agents.mas.StructuredFlow.agents.utils import get_AGENT_FAILED_GROUP_CHAT_MESSAGE
+from spoox.agents.agent_system import AgentSystem
+from spoox.agents.mas.messages import GroupChatMessage, RequestToSpeak, GROUP_CHAT_TOPIC_TYPE
+from spoox.agents.mas.StructuredFlow.agents.prompts import get_AGENT_FAILED_GROUP_CHAT_MESSAGE
 from spoox.agents.errors import MaxOllamaRetrialsError, ModelClientError, MaxOnlyTextMessagesError, MaxIterationsError, \
     AgentError
-from spoox.environment.Environment import Environment
-from spoox.interface.Interface import Interface
 
 # just in case the model is not using the tools or calling a next agent and only responses with a text
 # we have to make sure that there is a limit of "only text messages"
@@ -27,66 +26,78 @@ MAX_MODEL_CLIENT_ERRORS_RETRIALS = 3
 
 
 class BaseGroupChatAgent(RoutedAgent):
+    """
+    Base agent class used to build agents that follow the concepts and design principles of the spoox framework.
+    Tracks all distributed GroupChatMessages and adds them to the local chat history.
+    If a RequestToSpeak is received the agent gets to work in a loop starting with requesting the ModelClient.
 
+
+    """
     def __init__(
             self,
-            group_chat_topic_type: str,
             description: str,
             system_message: str,
-            model_client: ChatCompletionClient,
-            interface: Interface,
-            usage_stats: dict,
-            save_logs_f: Callable,
-            return_next_time_possible_event: asyncio.Event,
-            environment: Environment = None,
-            next_agent_topic_types: [str] = None,
+            agent_system: AgentSystem,
+            next_agent_topic_types: list[str] = None,
             max_internal_iterations: int = 50,
             fallback_agent_topic_type: str = None,
-            reset_on_request_to_speak: bool = False,
+            reset_on_request_to_speak: bool = False,  # todo should be True ?
     ) -> None:
+        """
+        Base agent class used to build agents that follow the concepts and design principles of the spoox framework.
+
+        :param description (str): one-sentence agent description passed to the RoutedAgent.
+        :param system_message (str): system message, added as the initial message to the agent's message history.
+        :param agent_system (AgentSystem): agent system associated with the agent,
+        providing access to the environment, model client, and other shared components.
+        :param next_agent_topic_types (list[str]): list of all possible next agent topic types that the agent is allowed to call.
+        :param max_internal_iterations (int): the maximum number of internal iterations the agent may perform,
+        corresponding to the maximum number of LLM calls.
+        :param fallback_agent_topic_type (str): topic type of the agent to be invoked if this agent fails.
+        :param reset_on_request_to_speak (bool): if set to True, internal messages are cleared from the chat history each time the agent is called,
+        while group chat messages always remain.
+        """
 
         super().__init__(description=description)
-        self._group_chat_topic_type = group_chat_topic_type.lower()
-        self._environment = environment
-        self._model_client = model_client
-        self._interface = interface
-        self._usage_stats = usage_stats
-        self._save_logs_f = save_logs_f
         self._next_agent_topic_types = [n.lower() for n in next_agent_topic_types or []]
         self._max_internal_iterations = max_internal_iterations
-        self._fallback_agent_topic_type = fallback_agent_topic_type.lower() if fallback_agent_topic_type else None
-        self._return_next_time_possible_event = return_next_time_possible_event
+        self._fallback_agent_topic_type = fallback_agent_topic_type
         self._reset_on_request_to_speak = reset_on_request_to_speak
+
+        self._environment = agent_system.environment
+        self._model_client = agent_system.model_client
+        self._interface = agent_system.interface
+        self._usage_stats = agent_system.usage_stats
+        self._save_logs_f = agent_system.save_logs
+        self._return_next_time_possible_event = agent_system.timeout_event
+        self._tools = self._environment.get_tools(self) if self._environment else []
 
         self._chat_history: List[LLMMessage] = [SystemMessage(content=system_message)]
         self._chat_history_group_chat_only: List[LLMMessage] = [SystemMessage(content=system_message)]
-        self._tools = environment.get_tools(self) if self._environment else []
 
+        # logging
+        self._interface.print_logging(system_message, f"logging - {self.id.type} - system_message")
         for t in self._tools:
             self._interface.print_logging(str(t.schema), f"logging - {self.id.type} - tool_schema")
-        self._interface.print_logging(system_message, f"logging - {self.id.type} - system_message")
 
     @message_handler
     async def handle_group_chat_message(self, message: GroupChatMessage, ctx: MessageContext) -> None:
         """
-        each agent keeps its own group chat history;
-        therefore, it has to process every GroupChatMessage and keeps track of whom posted the message;
-        own group chat messages are only stored in the _chat_history_group_chat_only, such that if the chat history
-        is reset (if reset_on_request_to_speak), the fallback chat history does also contain own previous summaries.
+        Each agent keeps track of the entire group chat in its internal message history.
+        Therefore, it stores every incoming GroupChatMessage and tracks which agent posted each message.
+        Thereby, `_chat_history` stores all group chat messages as well as all internal message history.
+        In contrast, `_chat_history_group_chat_only` only tracks GroupChatMessages.
+        This mechanism ensures that when the chat history is reset (controlled by `reset_on_request_to_speak`),
+        the chat history is replaced with `_chat_history_group_chat_only`,
+        so that only group chat messages are retained and all internal iteration messages are discarded.
         """
-        self._chat_history_group_chat_only.extend(
-            [
-                UserMessage(content=f"Transferred to {message.body.source.capitalize()} agent.", source="system"),
-                message.body,
-            ]
-        )
+        new_messages = [
+            UserMessage(content=f"Transferred to {message.body.source.capitalize()} agent.", source="system"),
+            message.body,
+        ]
+        self._chat_history_group_chat_only.extend(new_messages)
         if message.body.source != self.id.type:
-            self._chat_history.extend(
-                [
-                    UserMessage(content=f"Transferred to {message.body.source.capitalize()} agent.", source="system"),
-                    message.body,
-                ]
-            )
+            self._chat_history.extend(new_messages)
 
     @message_handler
     async def handle_request_to_speak(self, message: RequestToSpeak, ctx: MessageContext) -> None:
@@ -253,8 +264,10 @@ class BaseGroupChatAgent(RoutedAgent):
                 nonce=str(uuid.uuid4()),
                 body=UserMessage(content=message, source=self.id.type)
             ),
-            topic_id=DefaultTopicId(type=self._group_chat_topic_type),
+            topic_id=DefaultTopicId(type=GROUP_CHAT_TOPIC_TYPE),
         )
 
     async def _send_request_to_speak(self, agent_type: str):
-        await self.publish_message(RequestToSpeak(nonce=str(uuid.uuid4())), DefaultTopicId(type=agent_type))
+        await self.publish_message(
+            RequestToSpeak(nonce=str(uuid.uuid4())), DefaultTopicId(type=agent_type)
+        )
