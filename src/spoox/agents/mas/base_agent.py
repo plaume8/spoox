@@ -1,19 +1,18 @@
 import asyncio
-import re
-import time
-import uuid
 import copy
-from typing import List
+import re
+import uuid
+from typing import List, Tuple, Optional
 
 from autogen_core import RoutedAgent, message_handler, MessageContext, DefaultTopicId, FunctionCall
 from autogen_core.models import SystemMessage, LLMMessage, UserMessage, AssistantMessage, \
-    FunctionExecutionResultMessage
+    FunctionExecutionResultMessage, CreateResult
 
 from spoox.agents.agent_system import AgentSystem
-from spoox.agents.mas.messages import GroupChatMessage, RequestToSpeak, GROUP_CHAT_TOPIC_TYPE
-from spoox.agents.mas.StructuredFlow.agents.prompts import get_AGENT_FAILED_GROUP_CHAT_MESSAGE
 from spoox.agents.errors import ModelClientError, MaxOnlyTextMessagesError, MaxIterationsError, \
     AgentError
+from spoox.agents.mas.StructuredFlow.agents.prompts import get_AGENT_FAILED_GROUP_CHAT_MESSAGE
+from spoox.agents.mas.messages import GroupChatMessage, RequestToSpeak, GROUP_CHAT_TOPIC_TYPE
 
 # just in case the model is not using the tools or calling a next agent and only responses with a text
 # we have to make sure that there is a limit of "only text messages"
@@ -142,11 +141,7 @@ class BaseGroupChatAgent(RoutedAgent):
         if self._fallback_agent_topic_type:
             failure_message = get_AGENT_FAILED_GROUP_CHAT_MESSAGE(self.id.type, self._fallback_agent_topic_type)
             self._interface.print_shadow(failure_message)
-            await self._send_group_chat_message(failure_message)
-            # 0.1 delay to ensure the GroupChatMessage can be observed before the RequestToSpeak
-            # (I think it is not required, however, it certainly does not hurt)
-            await asyncio.sleep(0.1)
-            await self._send_request_to_speak(self._fallback_agent_topic_type)
+            await self._send_group_chat_message_and_request_to_speak(failure_message, self._fallback_agent_topic_type)
 
         # if error and no fallback -> just return -> no next agent will be triggered -> autogen runtime exits
 
@@ -173,60 +168,44 @@ class BaseGroupChatAgent(RoutedAgent):
             self._save_logs_f()
             self._usage_stats['llm_calls_count'] += 1
 
-            # request llm
+            # request model client (llm)
             llm_res, model_client_errors = self._request_llm(ctx, model_client_errors)
             if llm_res is None:
                 continue
-
-            # add the response to session
-            self._chat_history.append(
-                AssistantMessage(content=llm_res.content, thought=llm_res.thought, source=self.id.type))
             self._interface.print_logging(str(llm_res), f"logging - {self.id.type} - entire llm_res")
+            content = llm_res.content
 
-            # print thoughts if available
+            # add the response to session and print thoughts if available
+            self._chat_history.append(
+                AssistantMessage(content=content, thought=llm_res.thought, source=self.id.type))
             if llm_res.thought:
-                self._interface.print_thought(llm_res.thought, f"{self.id.type} - thought field")
+                self._interface.print_thought(llm_res.thought, f"{self.id.type} - thoughts")
 
             # check if list of tool calls
-            if isinstance(llm_res.content, list) and all(
-                    isinstance(call, FunctionCall) for call in llm_res.content) and self._environment:
-                # execute all tool calls and add results to session
+            tool_results_message = self._exec_tools(ctx, llm_res)
+            if tool_results_message is not None:
                 counter_only_text_messages = 0
-                tool_results = await asyncio.gather(
-                    *[self._environment.execute_tool_call(self._tools, call, ctx.cancellation_token, self._interface,
-                                                          self._usage_stats, self.id.type)
-                      for call in llm_res.content]
-                )
-                self._chat_history.append(FunctionExecutionResultMessage(content=tool_results))
-                # SMASSupervisorAgent special case: if tools contained an AgentCall execution -> exit
-                if any(call.name == "CallAgent" for call in llm_res.content):
-                    # special logging for SMAS agent system
-                    call_agent_tool_calls = [t.arguments for t in llm_res.content if t.name == "CallAgent"]
-                    self._usage_stats['supervisor_agent_calling_chain'].append(call_agent_tool_calls)
+                self._chat_history.append(tool_results_message)
+                # SupervisorAgent special case: if tools contained an AgentCall execution -> exit
+                if any(call.name == "CallAgent" for call in content):
                     return
                 # otherwise: trigger LLM again with tool results in _chat_history
                 continue
 
             # check if just text (autogen: if it is not a list of tool calls, it has to be string)
-            assert isinstance(llm_res.content, str)
-            self._interface.print(llm_res.content, f"{self.id.type} - message")
+            assert isinstance(content, str)
+            self._interface.print(content, f"{self.id.type} - message")
 
             # check if agent finished and calls next agent
-            for nt in self._next_agent_topic_types:
-                patter = rf"\[[^\]]*{re.escape(nt)}[^\]]*\]"
-                if re.search(patter, llm_res.content, flags=re.IGNORECASE):
-                    # logging
-                    self._usage_stats['next_agent_calling_chain'].append(nt)
-                    # we assume that if an agent tag is included, this message contains the summary for the group chat
-                    await self._send_group_chat_message(llm_res.content)
-                    await asyncio.sleep(
-                        0.1)  # ensuring the group msg can be observed before the RTS (I think it is not required - but not sure...)
-                    await self._send_request_to_speak(nt)
-                    return
+            next_agent_tag = self._includes_agent_tag(content)
+            if next_agent_tag is not None:
+                # we assume that if an agent tag is included, this message contains the summary for the group chat
+                await self._send_group_chat_message_and_request_to_speak(content, next_agent_tag)
+                return
 
             # check if no `_next_agent_topic_types` were defined; if so, the agent finishes if no tools are called
             if not self._next_agent_topic_types:
-                await self._send_group_chat_message(llm_res.content)
+                await self._send_group_chat_message(content)
                 return
 
             # check if MAX_ONLY_TEXT_MESSAGES is reached
@@ -236,8 +215,7 @@ class BaseGroupChatAgent(RoutedAgent):
 
         raise MaxIterationsError(self.id.type, self._max_internal_iterations)
 
-
-    async def _request_llm(self, ctx: MessageContext, model_client_errors: int):
+    async def _request_llm(self, ctx: MessageContext, model_client_errors: int) -> Tuple[Optional[CreateResult], int]:
         """Invokes the model client (LLM) and handles any exception that occurs."""
 
         try:
@@ -257,7 +235,38 @@ class BaseGroupChatAgent(RoutedAgent):
         # llm call success
         self._usage_stats['prompt_tokens'].append(llm_res.usage.prompt_tokens)
         self._usage_stats['completion_tokens'].append(llm_res.usage.completion_tokens)
-        return CreateResult, 0
+        return llm_res, 0
+
+    async def _exec_tools(self, ctx: MessageContext, llm_res: CreateResult) -> Optional[FunctionExecutionResultMessage]:
+        """Executes available tool calls, if any."""
+
+        # check whether the LLM response contains tool calls
+        content = llm_res.content
+        if not isinstance(content, list) or not all(isinstance(c, FunctionCall) for c in content):
+            return None
+        if self._environment is None:
+            return None
+
+        # execute tool calls
+        tool_results = await asyncio.gather(
+            *[
+                self._environment.execute_tool_call(
+                    self._tools, c, ctx.cancellation_token, self._interface, self._usage_stats, self.id.type
+                )
+                for c in content
+            ]
+        )
+        return FunctionExecutionResultMessage(content=tool_results)
+
+    def _includes_agent_tag(self, message: str) -> Optional[str]:
+        """Checks if the message includes an agent tag and returns it when a match is detected."""
+
+        for nt in self._next_agent_topic_types:
+            patter = rf"\[[^\]]*{re.escape(nt)}[^\]]*\]"
+            if re.search(patter, message, flags=re.IGNORECASE):
+                self._usage_stats['next_agent_calling_chain'].append(nt)
+                return nt
+        return None
 
     async def _send_group_chat_message(self, message: str):
         self._usage_stats['group_chat_message_lengths'].append(len(message))
@@ -273,3 +282,10 @@ class BaseGroupChatAgent(RoutedAgent):
         await self.publish_message(
             RequestToSpeak(nonce=str(uuid.uuid4())), DefaultTopicId(type=agent_type)
         )
+
+    async def _send_group_chat_message_and_request_to_speak(self, message: str, agent_type: str):
+        await self._send_group_chat_message(message)
+        # 0.1 delay to ensure the GroupChatMessage can be observed before the RequestToSpeak
+        # (I think it is not required, however, it certainly does not hurt)
+        await asyncio.sleep(0.1)
+        await self._send_request_to_speak(agent_type)

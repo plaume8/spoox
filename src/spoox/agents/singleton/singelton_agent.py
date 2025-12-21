@@ -1,17 +1,15 @@
 import asyncio
-import time
-from typing import List, Callable, Optional, Tuple
+import re
+from typing import List, Optional, Tuple
 
 from autogen_core import RoutedAgent, message_handler, MessageContext, FunctionCall
-from autogen_core.models import SystemMessage, LLMMessage, ChatCompletionClient, AssistantMessage, \
+from autogen_core.models import SystemMessage, LLMMessage, AssistantMessage, \
     FunctionExecutionResultMessage, CreateResult
 
 from spoox.agents.agent_system import AgentSystem
-from spoox.agents.singleton.messages import PublicMessage
 from spoox.agents.errors import ModelClientError, MaxOnlyTextMessagesError, MaxIterationsError, \
     AgentError
-from spoox.environment.Environment import Environment
-from spoox.interface import Interface
+from spoox.agents.singleton.messages import PublicMessage
 from spoox.agents.singleton.prompts import get_SINGLETON_SYSTEM_PROMPT
 
 # just in case the model is not using the tools or including the finished_tag
@@ -77,25 +75,25 @@ class SingletonAgent(RoutedAgent):
             self._save_logs_f()
             self._usage_stats['llm_calls_count'] += 1
 
-            # request llm
+            # request model client (llm)
             llm_res, model_client_errors = self._request_llm(ctx, model_client_errors)
             if llm_res is None:
                 continue
-
-            # add the response to session
-            self._chat_history.append(
-                AssistantMessage(content=llm_res.content, thought=llm_res.thought, source=self.id.type))
             self._interface.print_logging(str(llm_res), f"logging - {self.id.type} - entire llm_res")
+            content = llm_res.content
 
-            # print thoughts if available
+            # add the response to session and print thoughts if available
+            self._chat_history.append(
+                AssistantMessage(content=content, thought=llm_res.thought, source=self.id.type))
             if llm_res.thought:
-                self._interface.print_thought(llm_res.thought, f"{self.id.type} - thought field")
+                self._interface.print_thought(llm_res.thought, f"{self.id.type} - thoughts")
 
-            # check if just text
-            if isinstance(llm_res.content, str):
-                self._interface.print(llm_res.content, f"{self.id.type} - message")
+            # check if just text response
+            if isinstance(content, str):
+                self._interface.print(content, f"{self.id.type} - message")
                 # check if `finished_tag` is included
-                if f"[{self.finished_tag.lower()}]" in llm_res.content.lower():
+                patter = rf"\[[^\]]*{re.escape(self.finished_tag)}[^\]]*\]"
+                if re.search(patter, content, flags=re.IGNORECASE):
                     return
                 # check if MAX_ONLY_TEXT_MESSAGES is reached
                 counter_only_text_messages += 1
@@ -104,21 +102,14 @@ class SingletonAgent(RoutedAgent):
                 continue
 
             # check if tool calls (if it is not string it has to be a list of tool calls)
-            assert isinstance(llm_res.content, list) and all(
-                isinstance(call, FunctionCall) for call in llm_res.content
-            )
+            assert isinstance(content, list) and all(isinstance(call, FunctionCall) for call in content)
             counter_only_text_messages = 0
-            # execute all tool calls and add results to session
-            tool_results = await asyncio.gather(
-                *[self._environment.execute_tool_call(self._tools, call, ctx.cancellation_token, self._interface,
-                                                      self._usage_stats, self.id.type)
-                  for call in llm_res.content]
-            )
-            self._chat_history.append(FunctionExecutionResultMessage(content=tool_results))
+            tool_results_message = self._exec_tools(ctx, content)
+            self._chat_history.append(tool_results_message)
 
         raise MaxIterationsError(self.id.type, self._max_internal_iterations)
 
-    async def _request_llm(self, ctx: MessageContext, model_client_errors: int):
+    async def _request_llm(self, ctx: MessageContext, model_client_errors: int) -> Tuple[Optional[CreateResult], int]:
         """Invokes the model client (LLM) and handles any exception that occurs."""
 
         try:
@@ -138,4 +129,17 @@ class SingletonAgent(RoutedAgent):
         # llm call success
         self._usage_stats['prompt_tokens'].append(llm_res.usage.prompt_tokens)
         self._usage_stats['completion_tokens'].append(llm_res.usage.completion_tokens)
-        return CreateResult, 0
+        return llm_res, 0
+
+    async def _exec_tools(self, ctx: MessageContext, calls: list[FunctionCall]) -> FunctionExecutionResultMessage:
+        """Executes available tool calls."""
+
+        tool_results = await asyncio.gather(
+            *[
+                self._environment.execute_tool_call(
+                    self._tools, c, ctx.cancellation_token, self._interface, self._usage_stats, self.id.type
+                )
+                for c in calls
+            ]
+        )
+        return FunctionExecutionResultMessage(content=tool_results)
