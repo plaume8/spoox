@@ -1,9 +1,15 @@
 from spoox.agents.agent_system import AgentSystem
+from spoox.agents.mas.agents.prompts import get_APPROVER_SYSTEM_MESSAGE
 from spoox.agents.mas.base_agent import BaseGroupChatAgent
-from spoox.agents.mas.StructuredFlow.agents.prompts import get_APPROVER_SYSTEM_MESSAGE
 
 
 class ApproverAgent(BaseGroupChatAgent):
+    """
+    The Approver's role is to examine the entire solution progress and objectively decide
+    whether the overall task has been completed. It is not equipped with any tools.
+    It functions as a quality guard that does not actively interact with the environment.
+    Instead, it exclusively focuses on the overall progress based on the entire group chat history.
+    """
 
     def __init__(
             self,

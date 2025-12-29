@@ -1,9 +1,16 @@
 from spoox.agents.agent_system import AgentSystem
 from spoox.agents.mas.base_agent import BaseGroupChatAgent
-from spoox.agents.mas.StructuredFlow.agents.prompts import get_SUB_TASK_PLANNER_SYSTEM_MESSAGE
+from spoox.agents.mas.agents.prompts import get_SUB_TASK_PLANNER_SYSTEM_MESSAGE
 
 
 class SubTaskPlannerAgent(BaseGroupChatAgent):
+    """
+    Motivated by the idea of incorporating task decomposition into the MAS,
+    the Sub-Task Planner identifies and formulates the next appropriate sub-task given the system’s current progress.
+    Its role is to describe the sub-task and sketch a high-level approach for solving it,
+    expressed purely in natural language, without offering a detailed step-by-step plan.
+    To reinforce this abstraction-focused behavior, the agent is intentionally not equipped with any tools.
+    """
 
     def __init__(
             self,

@@ -1,10 +1,15 @@
 from spoox.agents.agent_system import AgentSystem
 from spoox.agents.mas.base_agent import BaseGroupChatAgent
-from spoox.agents.mas.StructuredFlow.agents.prompts import get_REFINER_SYSTEM_MESSAGE
-from spoox.environment.Environment import Environment
+from spoox.agents.mas.agents.prompts import get_REFINER_SYSTEM_MESSAGE
 
 
 class RefinerAgent(BaseGroupChatAgent):
+    """
+    Equipped with all tools, this agent is responsible for resolving discovered bugs
+    and refining or completing the existing implementation of the overall task.
+    It assumes that previous agents have already identified bugs, missing components, and other errors in the solution.
+    Its sole focus is to address and fix these most recent findings.
+    """
 
     def __init__(
             self,

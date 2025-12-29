@@ -1,9 +1,14 @@
 from spoox.agents.agent_system import AgentSystem
 from spoox.agents.mas.base_agent import BaseGroupChatAgent
-from spoox.agents.mas.StructuredFlow.agents.prompts import get_EXPLORER_SYSTEM_MESSAGE
+from spoox.agents.mas.agents.prompts import get_EXPLORER_SYSTEM_MESSAGE
 
 
 class ExplorerAgent(BaseGroupChatAgent):
+    """
+    This agent is prompted to solely focus on exploring the environment and gathering basic information about it.
+    It is not intended to solve the task, its only objective is to produce a broad overview of the given environment.
+    To emphasize its purely exploratory nature, this agent is intentionally not equipped with the Python tool.
+    """
 
     def __init__(
             self,

@@ -11,7 +11,7 @@ from autogen_core.models import SystemMessage, LLMMessage, UserMessage, Assistan
 from spoox.agents.agent_system import AgentSystem
 from spoox.agents.errors import ModelClientError, MaxOnlyTextMessagesError, MaxIterationsError, \
     AgentError
-from spoox.agents.mas.StructuredFlow.agents.prompts import get_AGENT_FAILED_GROUP_CHAT_MESSAGE
+from spoox.agents.mas.agents.prompts import get_AGENT_FAILED_GROUP_CHAT_MESSAGE
 from spoox.agents.mas.messages import GroupChatMessage, RequestToSpeak, GROUP_CHAT_TOPIC_TYPE
 
 # just in case the model is not using the tools or calling a next agent and only responses with a text

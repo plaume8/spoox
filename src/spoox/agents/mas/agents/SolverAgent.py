@@ -1,10 +1,14 @@
 from spoox.agents.agent_system import AgentSystem
 from spoox.agents.mas.base_agent import BaseGroupChatAgent
-from spoox.agents.mas.StructuredFlow.agents.prompts import get_SOLVER_SYSTEM_MESSAGE
-from spoox.environment.Environment import Environment
+from spoox.agents.mas.agents.prompts import get_SOLVER_SYSTEM_MESSAGE
 
 
 class SolverAgent(BaseGroupChatAgent):
+    """
+    As its name implies, this agent is responsible for actively solving the task.
+    It continues working until the task is completed or no further meaningful contributions are possible.
+    The agent is equipped with all available tools to ensure the maximum possible action space.
+    """
 
     def __init__(
             self,

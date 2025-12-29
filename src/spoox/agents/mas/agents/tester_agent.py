@@ -1,9 +1,14 @@
 from spoox.agents.agent_system import AgentSystem
 from spoox.agents.mas.base_agent import BaseGroupChatAgent
-from spoox.agents.mas.StructuredFlow.agents.prompts import get_TESTER_SYSTEM_MESSAGE
+from spoox.agents.mas.agents.prompts import get_TESTER_SYSTEM_MESSAGE
 
 
 class TesterAgent(BaseGroupChatAgent):
+    """
+    The sole purpose of the Tester Agent is to actively test the implemented solution.
+    Thereby, it should not fix any issues, instead, it writes tests, executes them,
+    and provides a natural language summary of its findings, using all coding tools.
+    """
 
     def __init__(
             self,
