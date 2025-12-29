@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Optional
 
+from autogen_core import BaseAgent
 from autogen_ext.tools.code_execution import PythonCodeExecutionTool
 from autogen_ext.tools.langchain import LangChainToolAdapter
 from langchain_community.tools import DuckDuckGoSearchResults
@@ -36,8 +37,8 @@ class LocalEnvironment(Environment):
         await self._code_executor.restart()
         await self._terminal_tool.reset()
 
-    def get_tools(self, obj):
-        class_name = obj.__class__.__name__
+    def get_tools(self, agent: BaseAgent):
+        class_name = agent.__class__.__name__
         if class_name in ["SingletonAgent"]:
             return [self._shell_tool, self._python_tool, self._terminal_tool, self._search_tool]
         elif class_name in ["ExplorerAgent"]:
@@ -46,13 +47,11 @@ class LocalEnvironment(Environment):
             return [self._shell_tool, self._python_tool, self._terminal_tool, self._search_tool]
         elif class_name in ["TesterAgent"]:
             return [self._shell_tool, self._python_tool, self._terminal_tool]
-        elif class_name in ["SMASSupervisorAgent"] and self.call_agent_tool is not None:
-            return [self.call_agent_tool]
         # default: return no tools (e.g. Approver, Summarizer, ...)
         return []
 
-    def get_additional_tool_descriptions(self, obj) -> [str]:
-        class_name = obj.__class__.__name__
+    def get_additional_tool_descriptions(self, agent: BaseAgent) -> [str]:
+        class_name = agent.__class__.__name__
         shell_descr = f"""- Use Shell tool for simple, single bash commands. Do **not** use it for commands that open interactive terminal programs (e.g. git log or man)."""
         py_descr = f"""- Use PythonExecutor tool for complex logic, scripting, or data processing."""
         terminal_descr = f"""- Use Terminal tool to execute commands in a persistent terminal instance and get back the exact terminal screen. This is especially useful for interactive programs such as git log, man, or vim."""

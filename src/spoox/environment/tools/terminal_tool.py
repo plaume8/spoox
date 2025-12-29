@@ -6,7 +6,7 @@ from autogen_core.tools import BaseTool
 from pydantic import BaseModel, Field, model_serializer
 from typing_extensions import Self
 
-from spoox.environment.code_executors.TmuxTerminalSession import TmuxTerminalSession
+from spoox.environment.code_executors.tmux_terminal_session import TmuxTerminalSession
 
 
 """

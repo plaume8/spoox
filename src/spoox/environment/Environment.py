@@ -1,44 +1,71 @@
 import json
 from abc import ABC, abstractmethod
 
-from autogen_core import FunctionCall, CancellationToken
+from autogen_core import FunctionCall, CancellationToken, BaseAgent
 from autogen_core.models import FunctionExecutionResult
+from autogen_core.tools import BaseTool
 
 from spoox.interface.Interface import Interface
 
+
 class Environment(ABC):
+    """
+    This abstract base class manages a collection of tools and other environmental stuff,
+    providing methods to start/stop/reset the environment, retrieve available tools,
+    and execute tool calls with logging, error handling, and usage statistics tracking.
+    Typically, an agent is equipped with an environment.
+    """
 
     def __init__(self):
         self.tools = []
         self._started = False
         self.additional_tool_descriptions = ""
 
-        # special: CallAgentTool is set by the SMASSupervisorAgent
-        self.call_agent_tool = None
-
     @abstractmethod
     async def start(self):
+        """Starts the environment. Should be called once during agent system startup."""
         pass
 
     @abstractmethod
     async def stop(self):
+        """Stop the environment. Should be called once during agent system shutdown."""
         pass
 
     @abstractmethod
     async def reset(self):
+        """
+        Resets the environment. Typically called when an agent starts working in a shared environment
+        to ensure no dependencies exist from previous agent operations.
+        """
         pass
 
     @abstractmethod
-    def get_tools(self, obj):
+    def get_tools(self, agent: BaseAgent) -> list[BaseTool]:
+        """Returns a list of tools the agent should be equipped with."""
         pass
 
     @abstractmethod
-    def get_additional_tool_descriptions(self, obj) -> [str]:
+    def get_additional_tool_descriptions(self, agent: BaseAgent) -> [str]:
+        """
+        Agent system prompts may include additional descriptions for their environment and tools.
+        This function returns supplementary description text for the specific agent when needed.
+        """
         pass
 
     async def execute_tool_call(
-            self, tools, call: FunctionCall, cancellation_token: CancellationToken, interface: Interface, usage_stats: dict, caller_name: str = ""
+            self, tools, call: FunctionCall, cancellation_token: CancellationToken, interface: Interface,
+            usage_stats: dict, caller_name: str = ""
     ) -> FunctionExecutionResult:
+        """
+        This method executes a tool call by finding the matching tool by name, running it with the provided arguments.
+        :param tools: List of all available tools callable by the agent.
+        :param call: FunctionCall to be executed.
+        :param cancellation_token: CancellationToken.
+        :param interface: List of all available tools callable by the agent.
+        :param usage_stats: Dictionary of usage statistics, provided by the agent system.
+        :param caller_name: Agent topic type.
+        :return: Filled FunctionExecutionResult.
+        """
 
         # logging
         args_parsed = json.loads(call.arguments)
@@ -54,12 +81,14 @@ class Environment(ABC):
         # find tool by name and run it
         tool = next((tool for tool in tools if tool.name == call.name), None)
         if tool is None:
-            feResult = FunctionExecutionResult(call_id=call.id, content=f"Tool '{tool_name}' is not known.", is_error=True, name=call.name)
+            feResult = FunctionExecutionResult(call_id=call.id, content=f"Tool '{tool_name}' is not known.",
+                                               is_error=True, name=call.name)
         else:
             # run the tool and capture the result
             try:
                 result = await tool.run_json(args_parsed, cancellation_token)
-                feResult = FunctionExecutionResult(call_id=call.id, content=tool.return_value_as_string(result), is_error=False, name=tool.name)
+                feResult = FunctionExecutionResult(call_id=call.id, content=tool.return_value_as_string(result),
+                                                   is_error=False, name=tool.name)
             except Exception as e:
                 feResult = FunctionExecutionResult(call_id=call.id, content=str(e), is_error=True, name=tool.name)
 

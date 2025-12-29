@@ -183,10 +183,7 @@ class BaseGroupChatAgent(RoutedAgent):
             if tool_results_message is not None:
                 counter_only_text_messages = 0
                 self._chat_history.append(tool_results_message)
-                # SupervisorAgent special case: if tools contained an AgentCall execution -> exit
-                if any(call.name == "CallAgent" for call in content):
-                    return
-                # otherwise: trigger LLM again with tool results in _chat_history
+                # trigger LLM again with tool results in _chat_history
                 continue
 
             # check if just text (autogen: if it is not a list of tool calls, it has to be string)

@@ -17,8 +17,8 @@ class ExecInput(BaseModel):
     timeout_sec: int | None = None
 
 
-_AGENT_ID = "mas-group-chat-l"  # "singleton",'mas-group-chat-s','mas-group-chat-m','mas-group-chat-l','mas-supervisor'
-_AGENT_ID_CHAR = "l"  # "singleton",'s','m','l','supervisor'
+_AGENT_ID = "mas-group-chat-l"  # "singleton",'mas-group-chat-s','mas-group-chat-m','mas-group-chat-l'
+_AGENT_ID_CHAR = "l"  # "singleton",'s','m','l'
 _MODEL_ID = "gpt-5-nano"  # "gpt-oss:20b","qwen3:14b","claude-sonnet-4-5","magistral:24b","gpt-5","gpt-5-mini","gpt-5-nano"
 
 
