@@ -12,14 +12,24 @@ from spoox.agents.errors import ModelClientError, MaxOnlyTextMessagesError, MaxI
 from spoox.agents.singleton.messages import PublicMessage
 from spoox.agents.singleton.prompts import get_SINGLETON_SYSTEM_PROMPT
 
-# just in case the model is not using the tools or including the finished_tag
-# we have to make sure that there is a limit of "only text messages"
+
+# to ensure progress and prevent endless text-only replies, a limit on consecutive text-only messages is enforced
 MAX_ONLY_TEXT_MESSAGES = 3
 
+# if the model client encounters errors, the agent allows a maximum of three retry attempts
 MAX_MODEL_CLIENT_ERRORS_RETRIALS = 3
 
 
 class SingletonAgent(RoutedAgent):
+    """
+    This agent represents the single-agent setup and is prompted to solve the entire task on its own. It is equipped
+    with all available tools, and to provide additional guidance, we included a brief sequential abstraction
+    of a typical problem-solving procedure consisting of the steps: explore, plan, solve, test, and summarize.
+
+    As soon as it receives a RequestToSpeak, it starts working by calling tools and reasoning aloud
+    until it finishes by including the finished_tag in its response.
+    """
+
     finished_tag = "finished"
 
     def __init__(self, agent_system: AgentSystem, max_internal_iterations: int = 100) -> None:
@@ -50,7 +60,7 @@ class SingletonAgent(RoutedAgent):
 
         try:
             self._chat_history.append(message.body)
-            await self.agent_loop(ctx)
+            await self._agent_loop(ctx)
         except AgentError as e:
             self._interface.print_highlight(str(e), "Agent Error")
             self._usage_stats["agent_errors"].append(e)
@@ -58,8 +68,8 @@ class SingletonAgent(RoutedAgent):
             self._interface.print_highlight(str(e), "Unexpected Error")
             self._usage_stats["agent_errors"].append(e)
 
-    async def agent_loop(self, ctx: MessageContext):
-        """Run llm over and over again until the agent is finished."""
+    async def _agent_loop(self, ctx: MessageContext):
+        """Request the LLM, process its response, and repeat until the agent has finished."""
 
         # tracking consecutive model client errors and LLM "only-text" responses
         counter_only_text_messages = 0

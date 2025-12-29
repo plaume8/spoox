@@ -14,20 +14,19 @@ from spoox.agents.errors import ModelClientError, MaxOnlyTextMessagesError, MaxI
 from spoox.agents.mas.agents.prompts import get_AGENT_FAILED_GROUP_CHAT_MESSAGE
 from spoox.agents.mas.messages import GroupChatMessage, RequestToSpeak, GROUP_CHAT_TOPIC_TYPE
 
-# just in case the model is not using the tools or calling a next agent and only responses with a text
-# we have to make sure that there is a limit of "only text messages"
+
+# to ensure progress and prevent endless text-only replies, a limit on consecutive text-only messages is enforced
 MAX_ONLY_TEXT_MESSAGES = 3
 
+# if the model client encounters errors, the agent allows a maximum of three retry attempts
 MAX_MODEL_CLIENT_ERRORS_RETRIALS = 3
 
 
 class BaseGroupChatAgent(RoutedAgent):
     """
     Base agent class used to build agents that follow the concepts and design principles of the spoox framework.
-    Tracks all distributed GroupChatMessages and adds them to the local chat history.
-    If a RequestToSpeak is received the agent gets to work in a loop starting with requesting the ModelClient.
-
-
+    Agents maintain a local chat history by recording all distributed GroupChatMessages.
+    When a RequestToSpeak is received, the agent starts its internal execution loop.
     """
 
     def __init__(
@@ -41,18 +40,15 @@ class BaseGroupChatAgent(RoutedAgent):
             reset_on_request_to_speak: bool = False,  # todo should be True ?
     ) -> None:
         """
-        Base agent class used to build agents that follow the concepts and design principles of the spoox framework.
+        Base agent class used to build agents following the concepts and design principles of the spoox framework.
 
-        :param description (str): one-sentence agent description passed to the RoutedAgent.
-        :param system_message (str): system message, added as the initial message to the agent's message history.
-        :param agent_system (AgentSystem): agent system associated with the agent,
-        providing access to the environment, model client, and other shared components.
-        :param next_agent_topic_types (list[str]): list of all possible next agent topic types that the agent is allowed to call.
-        :param max_internal_iterations (int): the maximum number of internal iterations the agent may perform,
-        corresponding to the maximum number of LLM calls.
-        :param fallback_agent_topic_type (str): topic type of the agent to be invoked if this agent fails.
-        :param reset_on_request_to_speak (bool): if set to True, internal messages are cleared from the chat history each time the agent is called,
-        while group chat messages always remain.
+        :param description: One-sentence agent description passed to AutoGen's RoutedAgent.
+        :param system_message: System message added as the initial message to the agent's message history.
+        :param agent_system: Agent system associated with the agent, providing access to the environment, model client, and other shared components.
+        :param next_agent_topic_types: List of all possible next agent topic types that the agent is allowed to call.
+        :param max_internal_iterations: Maximum number of internal iterations the agent may perform, corresponding to the maximum number of LLM calls.
+        :param fallback_agent_topic_type: Topic type of the agent to be invoked if this agent fails.
+        :param reset_on_request_to_speak: If True, internal messages are cleared from the chat history each time the agent is called, while group chat messages remain.
         """
 
         super().__init__(description=description)
@@ -82,10 +78,10 @@ class BaseGroupChatAgent(RoutedAgent):
         """
         Each agent keeps track of the entire group chat in its internal message history.
         Therefore, it stores every incoming GroupChatMessage and tracks which agent posted each message.
-        Thereby, `_chat_history` stores all group chat messages as well as all internal message history.
-        In contrast, `_chat_history_group_chat_only` only tracks GroupChatMessages.
-        This mechanism ensures that when the chat history is reset (controlled by `reset_on_request_to_speak`),
-        the chat history is replaced with `_chat_history_group_chat_only`,
+        Thereby, `_chat_history` stores all group chat messages as well as all internal message history
+        and `_chat_history_group_chat_only` only tracks GroupChatMessages.
+        This ensures that when the chat history is reset (controlled by `reset_on_request_to_speak`),
+        the chat history is simply replaced with `_chat_history_group_chat_only`,
         so that only group chat messages are retained and all internal iteration messages are discarded.
         """
         new_messages = [
@@ -128,7 +124,7 @@ class BaseGroupChatAgent(RoutedAgent):
         # run the agent's internal loop;
         # if agent loop fails, no final group chat message is generated, and the fallback agent is called if available
         try:
-            await self.agent_loop(ctx)
+            await self._agent_loop(ctx)
             return
         except AgentError as e:
             self._interface.print_highlight(str(e), "Agent Error")
@@ -145,13 +141,14 @@ class BaseGroupChatAgent(RoutedAgent):
 
         # if error and no fallback -> just return -> no next agent will be triggered -> autogen runtime exits
 
-    async def agent_loop(self, ctx: MessageContext):
-        """Run llm over and over again until the agent is finished."""
+    async def _agent_loop(self, ctx: MessageContext):
         """
-        if the agent is requested to speak, the llm is triggered;
-        if the response includes the 'finished_tag' and no tool calls, the answer is printed and the agent exits;
-        if the response contains tool calls, the tools are executed, and the llm is triggered again with the results;
-        one of the tool calls could call a next agent, if so a RequestToSpeak message is posted.
+        Request the LLM, process its response, and repeat until the agent has finished.
+        High-level flow:
+
+        1.	The model client (LLM) is queried and returns a response.
+        2.	The response is checked for tool calls. If tool calls are present, the corresponding tools are executed and the loop restarts.
+        3.	If the response consists of a plain text answer, it is checked for a requested next-agent tag and whether the referenced agent exists.
         """
 
         # tracking consecutive model client errors and LLM "only-text" responses
@@ -259,7 +256,7 @@ class BaseGroupChatAgent(RoutedAgent):
         return FunctionExecutionResultMessage(content=tool_results)
 
     def _includes_agent_tag(self, message: str) -> Optional[str]:
-        """Checks if the message includes an agent tag and returns it when a match is detected."""
+        """Checks if the message includes an agent tag and returns the first match detected."""
 
         for nt in self._next_agent_topic_types:
             patter = rf"\[[^\]]*{re.escape(nt)}[^\]]*\]"
