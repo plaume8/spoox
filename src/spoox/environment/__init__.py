@@ -1,5 +1,5 @@
-from .Environment import Environment
-from .LocalEnvironment import LocalEnvironment
+from .environment import Environment
+from .local_environment import LocalEnvironment
 
 
 __all__ = [

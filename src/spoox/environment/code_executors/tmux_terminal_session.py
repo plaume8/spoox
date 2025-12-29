@@ -7,8 +7,8 @@ class TmuxTerminalSession:
     Control a persistent tmux pane from Python.
 
     - A tmux session is created if it doesn't exist.
-    - You can send commands / keypresses.
-    - You can read the current visible screen contents.
+    - One can send commands / key-presses.
+    - One can read the current visible screen contents.
     """
 
     def __init__(self, session_name="terminal", window_index=0, pane_index=0):
@@ -43,16 +43,11 @@ class TmuxTerminalSession:
             self._tmux("resize-window", "-t", self.session_name, "-x", "128", "-y", "16")
 
     def send_line(self, line: str):
-        """
-        Send a command followed by Enter (like typing a command and pressing Return).
-        """
+        """Send a command followed by Enter (like typing a command and pressing Return)."""
         self._tmux("send-keys", "-t", self.target, line, "Enter")
 
     def send_keys(self, *keys: str):
-        """
-        Send arbitrary keys (no implicit Enter).
-        You can pass tmux key tokens (e.g. 'C-c') or literal strings.
-        """
+        """Send arbitrary keys (no implicit Enter). You can pass tmux key tokens (e.g. 'C-c') or literal strings."""
         self._tmux("send-keys", "-t", self.target, *keys)
 
     def get_screen(self) -> (str, str):
@@ -97,6 +92,7 @@ class TmuxTerminalSession:
         return screen_text, current_cmd
 
     def clear_history(self):
+        """Clear terminal screen history."""
         self.send_line("clear")
         time.sleep(1)  # todo can be done better
         self._tmux("clear-history", "-t", self.target)

@@ -2,17 +2,22 @@ from pathlib import Path
 from typing import Optional
 
 from autogen_core import BaseAgent
+from autogen_core.tools import BaseTool
 from autogen_ext.tools.code_execution import PythonCodeExecutionTool
 from autogen_ext.tools.langchain import LangChainToolAdapter
 from langchain_community.tools import DuckDuckGoSearchResults
 
-from spoox.environment.Environment import Environment
-from spoox.environment.code_executors.CodeExecutorLocal import CodeExecutorLocal
-from spoox.environment.tools.ShellTool import ShellTool
-from spoox.environment.tools.TerminalTool import TerminalTool
+from spoox.environment import Environment
+from spoox.environment.code_executors import CodeExecutorLocal
+from spoox.environment.tools import ShellTool
+from spoox.environment.tools import TerminalTool
 
 
 class LocalEnvironment(Environment):
+    """
+    This is a concrete environment implementation providing basic programming tools and access the local computer.
+    Also, `get_additional_tool_descriptions` and `get_tools` are configured for each relevant specific spoox agent.
+    """
 
     def __init__(self, work_dir: Optional[Path] = None, user: Optional[str] = None):
         super().__init__()
@@ -25,19 +30,27 @@ class LocalEnvironment(Environment):
         self._search_tool = LangChainToolAdapter(DuckDuckGoSearchResults(output_format="list"))
 
     async def start(self):
+        """Stop the environment. Should be called once during agent system shutdown."""
         await self._code_executor.start()
         self._started = True
 
     async def stop(self):
+        """Stop the environment. Should be called once during agent system shutdown."""
         await self._code_executor.stop()
         await self._terminal_tool.stop()
         self._started = False
 
     async def reset(self):
+        """
+        Resets the environment. Typically called when an agent starts working in a shared environment
+        to ensure no dependencies exist from previous agent operations.
+        """
         await self._code_executor.restart()
         await self._terminal_tool.reset()
 
-    def get_tools(self, agent: BaseAgent):
+    def get_tools(self, agent: BaseAgent) -> list[BaseTool]:
+        """Returns a list of tools the agent should be equipped with. All relevant spoox agents are represented."""
+
         class_name = agent.__class__.__name__
         if class_name in ["SingletonAgent"]:
             return [self._shell_tool, self._python_tool, self._terminal_tool, self._search_tool]
@@ -51,6 +64,11 @@ class LocalEnvironment(Environment):
         return []
 
     def get_additional_tool_descriptions(self, agent: BaseAgent) -> [str]:
+        """
+        Agent system prompts may include additional descriptions for their environment and tools.
+        All relevant spoox agents are represented.
+        """
+
         class_name = agent.__class__.__name__
         shell_descr = f"""- Use Shell tool for simple, single bash commands. Do **not** use it for commands that open interactive terminal programs (e.g. git log or man)."""
         py_descr = f"""- Use PythonExecutor tool for complex logic, scripting, or data processing."""
@@ -66,4 +84,3 @@ class LocalEnvironment(Environment):
             return [shell_descr, py_descr, terminal_descr]
         # default: return no additional tool descriptions (e.g. Approver, Summarizer, ...)
         return []
-

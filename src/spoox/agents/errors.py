@@ -9,6 +9,7 @@ class AgentError(Exception):
 
 
 class ModelClientError(AgentError):
+    """Model client error after maximum retry limit is reached."""
 
     def __init__(self, agent_id: str, max_retrials: int, model_client_exception: Exception):
         super().__init__(agent_id,
@@ -18,6 +19,7 @@ class ModelClientError(AgentError):
 
 
 class MaxOnlyTextMessagesError(AgentError):
+    """The maximum limit of consecutive text-only messages has been reached."""
 
     def __init__(self, agent_id: str, max_only_text_messages: int):
         super().__init__(
@@ -26,6 +28,7 @@ class MaxOnlyTextMessagesError(AgentError):
 
 
 class MaxIterationsError(AgentError):
+    """The maximum number of agent internal iterations has been reached."""
 
     def __init__(self, agent_id: str, max_iterations: int):
         super().__init__(agent_id, f"Max agent iterations reached ({max_iterations})")

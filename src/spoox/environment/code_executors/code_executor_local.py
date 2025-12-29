@@ -14,19 +14,23 @@ from pydantic import BaseModel
 @dataclass
 class CodeBlockTimeout(CodeBlock):
     """A code block extracted from an agent message. Including max timeout."""
-
     timeout: Optional[int] = None
 
 
 class CodeExecutorLocalConfig(BaseModel):
     """Configuration for PermanentCommandLineCodeExecutor"""
-
     timeout_min: Optional[int] = 20
     timeout_max: Optional[int] = 120
     work_dir: Optional[str] = None
 
 
 class CodeExecutorLocal(CodeExecutor, Component[CodeExecutorLocalConfig]):
+    """
+    This CodeExecutor executes Python and Bash code blocks locally by writing them to temporary files,
+    running them as subprocesses with configurable timeouts and working directories,
+    and returning the execution results with stdout/stderr output.
+    """
+
     component_config_schema = CodeExecutorLocalConfig
 
     SUPPORTED_LANGUAGES: ClassVar[List[str]] = [
@@ -58,6 +62,11 @@ class CodeExecutorLocal(CodeExecutor, Component[CodeExecutorLocalConfig]):
 
     async def execute_code_blocks(self, code_blocks: List[CodeBlock],
                                   cancellation_token: CancellationToken) -> CodeResult:
+        """
+        This method validates and executes a single code block by writing it to a temporary file,
+        running it as a subprocess with a bounded timeout, and returning the execution result
+        with formatted stdout/stderr output or a timeout error.
+        """
 
         if len(code_blocks) != 1:
             raise RuntimeError(f"CodeExecutorLocal `code_blocks` must exactly contain one code block.")
