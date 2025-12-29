@@ -9,7 +9,30 @@ from typing_extensions import Self
 from spoox.environment.code_executors.TmuxTerminalSession import TmuxTerminalSession
 
 
+"""
+Executing isolated Bash commands does not grant the agent the same level of control over the terminal as a human has. 
+Many terminal applications, such as vim, top, or man offer their own interactive CLIs, which cannot be meaningfully 
+accessed through single Bash calls. To enable successful interaction with these interfaces, the agent needs a tool
+that maintains a persistent shell instance and supports sending actual keyboard inputs such as Ctrl-C or Enter.
+To address this need, we have implemented a dedicated Terminal tool. Although we explored various designs, 
+ranging from multi-parameter invocation schemes to more guided action spaces, the approach that worked best in
+practice was, once again, the simplest one. The Terminal tool maintains an persistent terminal session using the 
+widely adopted tmux package. Tmux enables the creation of detachable, persistent terminal sessions with panes and 
+windows for structured command-line workflows, all controllable via tmux commands. The agent calls the tool by defining 
+a command as a string and, optionally, a boolean parameter named enter. By default, enter is set to true, meaning
+that after the specified command is typed in, an Enter keystroke is issued to submit it. The agent must explicitly set 
+enter to false when it wants to input text without submitting it immediately. The latter is typically required when an 
+interactive terminal interface only needs a single character such as q to exit, or when the agent intends to send 
+specific keystrokes like Ctrl-b, Tab, or Up. On each invocation, the tool returns the name of the program currently 
+running, typically bash in the default terminal. In addition, not only the last output is returned, instead, the tool 
+provides a full medium sized terminal window with 128 columns and 16 rows. This allows the agent to view the complete 
+terminal screen and interact with CLIs.
+"""
+
+
 class TerminalInput(BaseModel):
+    """Input object for TerminalInput."""
+
     command: str = Field(description="The command that should be executed in the persistent terminal instance.")
     enter: bool = Field(
         default=True,
@@ -20,6 +43,8 @@ class TerminalInput(BaseModel):
 
 
 class TerminalResult(BaseModel):
+    """Result object for TerminalTool."""
+
     running_program: str
     current_screen: str
 
@@ -41,15 +66,8 @@ class TerminalToolConfig(BaseModel):
     )
 
 
-class TerminalTool(
-    BaseTool[TerminalInput, TerminalResult], Component[TerminalToolConfig]
-):
-    """
-    A tool that runs an active terminal can execute commands and returns the entire terminal screen.
-
-    Args:
-        tmux_session_name: The terminal bench TmuxSession key.
-    """
+class TerminalTool(BaseTool[TerminalInput, TerminalResult], Component[TerminalToolConfig]):
+    """A tool that runs an active terminal can execute commands and returns the entire terminal screen."""
 
     component_config_schema = TerminalToolConfig
 
@@ -71,6 +89,7 @@ class TerminalTool(
 
     def _init_session(self, tmux_session_name: str = None) -> None:
         """Init a new tmux session - also overrides the current tmux_session_name."""
+
         if tmux_session_name is None:
             rand_suffix = str(random.randint(10000000, 99999999))
             self.tmux_session_name = f"ts-{rand_suffix}"
@@ -80,12 +99,11 @@ class TerminalTool(
         self._session.clear_history()
 
     async def run(self, args: TerminalInput, cancellation_token: CancellationToken = None) -> TerminalResult:
-
+        # add enter key stroke
         if args.enter:
             self._session.send_line(args.command)
         else:
             self._session.send_keys(args.command)
-
         # before getting the screen -> wait for 2s
         await asyncio.sleep(2)
         current_screen, running_program = self._session.get_screen()
@@ -104,10 +122,10 @@ class TerminalTool(
             self._session.kill_session()
 
     def _to_config(self) -> TerminalToolConfig:
-        """Convert current instance to config object"""
+        """Convert current instance to config object."""
         return TerminalToolConfig(tmux_session_name=self.tmux_session_name)
 
     @classmethod
     def _from_config(cls, config: TerminalToolConfig) -> Self:
-        """Create instance from config object"""
+        """Create instance from config object."""
         return cls(tmux_session_name=config.tmux_session_name)

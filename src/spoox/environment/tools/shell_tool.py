@@ -9,23 +9,33 @@ from typing_extensions import Self
 from spoox.environment._utils import output_truncat
 from spoox.environment.code_executors.CodeExecutorLocal import CodeBlockTimeout
 
+
 """
-class CodeExecutionInput(BaseModel):
-    command: str = Field(description="The Bash command that should be executed in the shell.")
-    timeout: int = Field(
-        description="Maximum duration (in seconds) the command may run. "
-                    "Define only if you want to increase the default timeout of 20s. "
-                    "Timeout value must not exceed 120s.",
-        default=20
-    )
+For human developers, opening a terminal and executing simple Bash commands serves as the standard lightweight interface 
+for performing general server management and diverse OS tasks. The action space is almost unbounded, multiple commands 
+can be composed, modified, and chained, to accomplish complex objectives. The Shell tool shall make this powerful 
+functionality available to agents. It has intentionally been designed with minimal complexity. To invoke it, the agent 
+only needs to provide the command as a string. The command is always executed in the current user’s home directory, 
+and the resulting shell output, including the exit code, is stored to the agent’s context. Thereby, the execution 
+environment is not persistent. Commands that manipulate the shell session, such as cd, do not affect future tool calls.
 """
 
 
 class CodeExecutionInput(BaseModel):
+    """Input object for ShellTool."""
+
     command: str = Field(description="The Bash command that should be executed in the shell.")
+    # timeout: int = Field(
+    #    description="Maximum duration (in seconds) the command may run. "
+    #                "Define only if you want to increase the default timeout of 20s. "
+    #                "Timeout value must not exceed 120s.",
+    #    default=20
+    # )
 
 
 class CodeExecutionResult(BaseModel):
+    """Result object for ShellTool."""
+
     output: str
     exit_code: Optional[int] = None
 
@@ -37,22 +47,15 @@ class CodeExecutionResult(BaseModel):
 
 
 class ShellToolConfig(BaseModel):
-    """Configuration for ShellTool"""
+    """Configuration for ShellTool."""
 
     executor: ComponentModel
     output_max: int
     description: str = "Execute a Bash command in the shell, in the users current directory."
 
 
-class ShellTool(
-    BaseTool[CodeExecutionInput, CodeExecutionResult], Component[ShellToolConfig]
-):
-    """
-    A tool that executes Bash code in a code executor and returns output.
-
-    Args:
-        executor: The code executor that will be used to execute the code blocks.
-    """
+class ShellTool(BaseTool[CodeExecutionInput, CodeExecutionResult], Component[ShellToolConfig]):
+    """A tool that executes Bash code in a code executor and returns the output."""
 
     component_config_schema = ShellToolConfig
 
@@ -77,11 +80,11 @@ class ShellTool(
         return CodeExecutionResult(exit_code=result.exit_code, output=output)
 
     def _to_config(self) -> ShellToolConfig:
-        """Convert current instance to config object"""
+        """Convert current instance to config object."""
         return ShellToolConfig(executor=self._executor.dump_component(), output_max=self._output_max)
 
     @classmethod
     def _from_config(cls, config: ShellToolConfig) -> Self:
-        """Create instance from config object"""
+        """Create instance from config object."""
         executor = CodeExecutor.load_component(config.executor)
         return cls(executor=executor, output_max=config.output_max)

@@ -11,22 +11,33 @@ from spoox.environment.code_executors.CodeExecutorLocal import CodeBlockTimeout
 
 
 """
-class CodeExecutionInput(BaseModel):
-    code: str = Field(description="The Python code block that should be executed.")
-    timeout: int = Field(
-        description="Maximum duration (in seconds) the code may run. "
-                    "Define only if you want to increase the default timeout of 20s. "
-                    "Timeout value must not exceed 120s.",
-        default=20
-    )
+To handle more complex tasks effectively, equipping the agent with the ability to execute Python code can be 
+particularly beneficial. While the agent could, in principle, open a Python interpreter within the Terminal tool, 
+the provision of a dedicated tool that allows the definition and execution of complete Python scripts simplifies 
+this process. The agent is explicitly prompted to use it for more complex sub-tasks such as data analysis or exhaustive 
+algorithmic reasoning. This may also improve transparency in practice, as Python code is generally easier to read and 
+likely more familiar to contemporary developers. In addition, access to a wide range of pip packages expands 
+the agent’s functional capabilities.
 """
 
 
 class CodeExecutionInput(BaseModel):
+    """Input object for PythonTool."""
+
     code: str = Field(description="The Python code block that should be executed.")
+
+    # todo test if timeout should be added
+    # timeout: int = Field(
+    #    description="Maximum duration (in seconds) the code may run. "
+    #                "Define only if you want to increase the default timeout of 20s. "
+    #                "Timeout value must not exceed 120s.",
+    #    default=20
+    # )
 
 
 class CodeExecutionResult(BaseModel):
+    """Result object for PythonTool."""
+
     output: str = 20
     exit_code: Optional[int] = None
 
@@ -38,22 +49,15 @@ class CodeExecutionResult(BaseModel):
 
 
 class PythonToolConfig(BaseModel):
-    """Configuration for PythonTool"""
+    """Configuration for PythonTool."""
 
     executor: ComponentModel
     output_max: int
     description: str = "Run a Python code block once in the users current directory."
 
 
-class PythonTool(
-    BaseTool[CodeExecutionInput, CodeExecutionResult], Component[PythonToolConfig]
-):
-    """
-    A tool that executes Python code blocks in a code executor and returns output.
-
-    Args:
-        executor: The code executor that will be used to execute the code blocks.
-    """
+class PythonTool(BaseTool[CodeExecutionInput, CodeExecutionResult], Component[PythonToolConfig]):
+    """A tool that executes Python code blocks in a code executor and returns the output."""
 
     component_config_schema = PythonToolConfig
 
@@ -69,7 +73,7 @@ class PythonTool(
 
     async def run(self, args: CodeExecutionInput, cancellation_token: CancellationToken) -> CodeExecutionResult:
         # execute code
-        code_block = CodeBlockTimeout(code=args.code, language="python", timeout=60)  # timeout=args.timeout
+        code_block = CodeBlockTimeout(code=args.code, language="python", timeout=60)  # timeout=args.timeout # todo test if timeout should be added
         result = await self._executor.execute_code_blocks(
             code_blocks=[code_block], cancellation_token=cancellation_token
         )
@@ -78,11 +82,11 @@ class PythonTool(
         return CodeExecutionResult(exit_code=result.exit_code, output=output)
 
     def _to_config(self) -> PythonToolConfig:
-        """Convert current instance to config object"""
+        """Convert current instance to config object."""
         return PythonToolConfig(executor=self._executor.dump_component(), output_max=self._output_max)
 
     @classmethod
     def _from_config(cls, config: PythonToolConfig) -> Self:
-        """Create instance from config object"""
+        """Create instance from config object."""
         executor = CodeExecutor.load_component(config.executor)
         return cls(executor=executor, output_max=config.output_max)
