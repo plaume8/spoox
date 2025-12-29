@@ -8,7 +8,7 @@ from autogen_core.models import UserMessage, ChatCompletionClient
 
 from spoox.agents.agent_system import AgentSystem
 from spoox.agents.mas.messages import GroupChatMessage, RequestToSpeak, GROUP_CHAT_TOPIC_TYPE
-from spoox.agents.mas.agents.SolverAgent import SolverAgent
+from spoox.agents.mas.agents import SolverAgent
 from spoox.agents.mas.agents import SummarizerAgent
 from spoox.agents.mas.agents import TesterAgent
 from spoox.environment.Environment import Environment

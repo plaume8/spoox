@@ -1,3 +1,4 @@
+
 class AgentError(Exception):
     """Base exception for all agent errors."""
 
@@ -29,4 +30,3 @@ class MaxIterationsError(AgentError):
     def __init__(self, agent_id: str, max_iterations: int):
         super().__init__(agent_id, f"Max agent iterations reached ({max_iterations})")
         self.max_iterations = max_iterations
-
