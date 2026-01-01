@@ -96,7 +96,7 @@ class SingletonAgent(RoutedAgent):
             self._chat_history.append(
                 AssistantMessage(content=content, thought=llm_res.thought, source=self.id.type))
             if llm_res.thought:
-                self._interface.print_thought(llm_res.thought, f"{self.id.type} - thoughts")
+                self._interface.print_thought(llm_res.thought)
 
             # check if just text response
             if isinstance(content, str):

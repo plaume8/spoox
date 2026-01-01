@@ -136,7 +136,7 @@ class BaseGroupChatAgent(RoutedAgent):
         # fallback mechanism
         if self._fallback_agent_topic_type:
             failure_message = get_AGENT_FAILED_GROUP_CHAT_MESSAGE(self.id.type, self._fallback_agent_topic_type)
-            self._interface.print_shadow(failure_message)
+            self._interface.print_shadow(failure_message, "Fallback Agent Call")
             await self._send_group_chat_message_and_request_to_speak(failure_message, self._fallback_agent_topic_type)
 
         # if error and no fallback -> just return -> no next agent will be triggered -> autogen runtime exits

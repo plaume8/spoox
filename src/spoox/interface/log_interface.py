@@ -5,8 +5,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 
-from spoox.interface.CLInterface import CLIColor
-from spoox.interface.Interface import Interface
+from spoox.interface.interface import Interface, CLIColor
 
 
 class LogInterfaceUserDelegate:
@@ -46,10 +45,10 @@ class LogInterfaceUserDelegate:
 
 
 class LogInterface(Interface):
-
     console = Console()
 
-    def __init__(self, logging_active: bool = False, print_live: bool = False, feedback_iterations_max: int = 0, home_dir_path: str = None, eval_file_path: str = None):
+    def __init__(self, logging_active: bool = False, print_live: bool = False, feedback_iterations_max: int = 0,
+                 home_dir_path: str = None, eval_file_path: str = None):
         super().__init__(logging_active)
 
         if feedback_iterations_max > 0 and (eval_file_path is None or home_dir_path is None):
@@ -64,37 +63,14 @@ class LogInterface(Interface):
         self.task_requested = False
         self.print_live = print_live
 
-    def printCLI(self, out_text: str, title: str = "", color: CLIColor = CLIColor.DEFAULT) -> None:
-        md = Markdown(html.escape(out_text))  # html.escape shows markdown with html tags
-        panel = Panel(md, title=title, style=color.value)
-        self.console.print(panel)
-
     def print(self, out_text: str, title: str = "", color: CLIColor = CLIColor.DEFAULT) -> None:
+        """Prints out_text to the interface with optional title and color parameters."""
+
         if self.print_live:
-            self.printCLI(out_text, title, color)
+            md = Markdown(html.escape(out_text))  # html.escape shows markdown with html tags
+            panel = Panel(md, title=title, style=color.value)
+            self.console.print(panel)
         self.logs.append((f"{title}", out_text, color.value))
-
-    def print_highlight(self, out_text: str, title: str = "") -> None:
-        self.print(out_text, title, CLIColor.ORANGE)
-
-    def print_shadow(self, out_text: str, title: str = "") -> None:
-        self.print(out_text, title, CLIColor.GREY)
-
-    def print_thought(self, out_text: str, title: str = "") -> None:
-        self.print(out_text, title, CLIColor.CYAN)
-
-    def print_command(self, out_text: str, title: str = "") -> None:
-        self.print(out_text, title, CLIColor.BLUE)
-
-    def print_tool_call(self, out_text: str, title: str = "") -> None:
-        self.print(out_text, title, CLIColor.DARKORANGE)
-
-    def print_user_message(self, out_text: str, title: str = "user input") -> None:
-        self.print(out_text, title, CLIColor.LILA)
-
-    def print_logging(self, out_text: str, title: str = "") -> None:
-        if self.logging_active:
-            self.print(out_text, title, CLIColor.DARKGREY)
 
     def request_user_input(self, query: str) -> str:
         # if feedback_iterations_max > 0 we provide feedback in the form of the eval_file_path output when executed;
@@ -138,6 +114,7 @@ class LogInterface(Interface):
         return user_input
 
     def request_select_choice(self, question: str, choices: [str]) -> str:
+        """Requests the user to select one item from choices."""
         self.logs.append(("select_choice_request_question", question))
         self.logs.append(("select_choice_request_choices", ', '.join(choices)))
         user_choice = self.user_delegate.user_choice
@@ -145,6 +122,8 @@ class LogInterface(Interface):
         return user_choice
 
     def reset(self) -> None:
+        """Resets the interface."""
+
         self.logs = []
         self.user_delegate = LogInterfaceUserDelegate()
 
