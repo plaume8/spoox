@@ -37,7 +37,7 @@ class Interface(ABC):
     def print_shadow(self, out_text: str, title: str = "") -> None:
         self.print(out_text, title, CLIColor.GREY)
 
-    def print_thought(self, out_text: str, title: str = "though") -> None:
+    def print_thought(self, out_text: str, title: str = "thought") -> None:
         self.print(out_text, title, CLIColor.CYAN)
 
     def print_tool_call(self, out_text: str, title: str = "tool call") -> None:

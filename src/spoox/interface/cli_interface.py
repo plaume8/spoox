@@ -11,6 +11,10 @@ from spoox.interface.interface import CLIColor
 
 
 class CLInterface(Interface):
+    """
+    Simple CLI interface for agent systems.
+    Prints outputs and requests inputs one below the other in the command line.
+    """
 
     console = Console()
 
