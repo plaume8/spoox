@@ -22,6 +22,13 @@ def main() -> None:
 
     parser = argparse.ArgumentParser(description="Spoox argument parser")
     parser.add_argument(
+        "-c",
+        "--model-client-id",
+        required=False,
+        default="openai",
+        help="Model client, options: 'ollama', 'openai', 'anthropic'",
+    )
+    parser.add_argument(
         "-m",
         "--model-id",
         required=False,
@@ -71,7 +78,7 @@ def main() -> None:
     )
 
     args = parser.parse_args()
-
+    client_id = str(args.model_client_id)
     model_id = str(args.model_id)
     agent_id = str(args.agent_id)
     print_reasoning = str(args.print_reasoning).lower() in ("yes", "true", "t", "y", "1")
@@ -83,7 +90,7 @@ def main() -> None:
     load_dotenv()
 
     # setup model client
-    model_client = setup_model_client(model_id=model_id, docker_access=in_docker)
+    model_client = setup_model_client(client_id=client_id, model_id=model_id, docker_access=in_docker)
 
     # setup environment and interface
     environment = LocalEnvironment()
