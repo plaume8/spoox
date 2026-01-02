@@ -17,8 +17,8 @@ class ExecInput(BaseModel):
     timeout_sec: int | None = None
 
 
-_AGENT_ID = "mas-group-chat-l"  # "singleton",'mas-group-chat-s','mas-group-chat-m','mas-group-chat-l'
-_AGENT_ID_CHAR = "l"  # "singleton",'s','m','l'
+_AGENT_ID = "mas-group-chat-m"  # "singleton",'mas-group-chat-s','mas-group-chat-m','mas-group-chat-l'
+_AGENT_ID_CHAR = "m"  # "singleton",'s','m','l'
 _MODEL_CLIENT_ID = "openai"  # "ollama", "openai", "anthropic"
 _MODEL_ID = "gpt-5-nano"  # "gpt-oss:20b","qwen3:14b","claude-sonnet-4-5","magistral:24b","gpt-5","gpt-5-mini","gpt-5-nano"
 
@@ -28,6 +28,12 @@ _AGENT_MAX_TIMEOUT = 60 * 60 * 2
 
 
 class Spoox(BaseInstalledAgent):
+    """
+    This script defines a Harbor agent wrapper for Spoox that configures the agent with a specific model.
+    Compliant with https://harborframework.com/docs/agents#installed-agents.
+
+    run with: `harbor run -d terminal-bench@2.0 -a /benchmarks/harbor/spoox`
+    """
 
     @staticmethod
     def name() -> str:
@@ -36,27 +42,25 @@ class Spoox(BaseInstalledAgent):
     @property
     def _install_agent_template_path(self) -> Path:
         """
-        Path to the jinja template script for installing the agent in the container.
+        Path to the jinja template script for installing the spoox agent in the container.
         """
         return Path(__file__).parent / "install_spoox.sh"
 
     def create_run_agent_commands(self, instruction: str) -> list[ExecInput]:
         """
-        Create the commands to run the agent in the container. Usually this is a single
-        command that passes the instruction to the agent and executes it in headless
-        mode.
+        Create the commands to run the agent in the container.
+        For running spoox, the pre-configured venv is activated and the spoox headless command is executed.
         """
-        # get chatgpt env
         load_dotenv()
         openai_api_key = str(os.environ.get("OPENAI_API_KEY"))
         safe_instruction = shlex.quote(instruction)
-        cmd = f". /opt/venv/bin/activate && spoox -c {_MODEL_CLIENT_ID} -m {_MODEL_ID} -a {_AGENT_ID} -l {_DOCKER_LOGS_DIR} -x {_AGENT_MAX_TIMEOUT} -t {safe_instruction}"
+        cmd = f". /opt/venv/bin/activate && spoox-h -c {_MODEL_CLIENT_ID} -m {_MODEL_ID} -a {_AGENT_ID} -l {_DOCKER_LOGS_DIR} -x {_AGENT_MAX_TIMEOUT} -t {safe_instruction}"
         return [ExecInput(command=cmd, env={"OPENAI_API_KEY": openai_api_key})]
 
     def populate_context_post_run(self, context: AgentContext) -> None:
         """
-        Populate the context with the results of the agent execution. Assumes the run()
-        method has already been called. Typically, it involves parsing a trajectory file.
+        Populate the context with the results of the agent execution. Assumes the run() method has already been called.
+        Parses token statistics and adds general agent configs to metadata.
         """
         meta_data = self._load_spoox_logs()
         if meta_data is None:
@@ -65,11 +69,12 @@ class Spoox(BaseInstalledAgent):
         context.n_output_tokens = meta_data.get("model-client-total-usage-completion-tokens")
         meta_data['spoox-agent-id'] = _AGENT_ID
         meta_data['spoox-agent-id-char'] = _AGENT_ID_CHAR
+        meta_data['model-client-id'] = _MODEL_CLIENT_ID
         meta_data['model-id'] = _MODEL_ID
         context.metadata = meta_data
 
     def _load_spoox_logs(self) -> Optional[dict]:
-        """Find and load metadata spoox logs."""
+        """Find and load spoox logs."""
         try:
             # find spoox logs
             spoox_dir = self.logs_dir / "spoox"
@@ -85,5 +90,6 @@ class Spoox(BaseInstalledAgent):
             if isinstance(meta_data, dict):
                 return meta_data
         except Exception:
+            # log parsing is non-critical
             pass
         return None
