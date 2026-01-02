@@ -7,56 +7,102 @@
   
 **SPOOX – SPlit lOOp eXpand**
 
-A terminal-integrated, LLM-powered multi-agent system designed to assist directly within the terminal. 
-Several differently scaled variants have been developed and are accessible through a terminal CLI: spoox-s, spoox-m, and spoox-l. 
-The architectures of these agent systems are based on the _spoox_ MAS framework,
+A terminal-integrated, LLM-powered multi-agent system (MAS) designed to assist developers directly within their terminal environment.
+_Spoox_ provides intelligent assistance for OS tasks, server management workflows, and software engineering challenges.
+The architectures of these agent systems are based on the _spoox_ MAS design framework,
 a generic architectural framework for multi-agent topology and communication design. 
+
+Several differently scaled terminal MAS variants have been developed and are accessible through a terminal CLI: _spoox-s_, _spoox-m_, and _spoox-l_.
 The spoox-m variant achieved first place on the [Terminal Bench leaderboard](https://www.tbench.ai/leaderboard/terminal-bench/2.0?models=GPT-5-Mini) 
-for the gpt-5-mini model and is therefore used as the default configuration for the spoox terminal CLI.
+for the gpt-5-mini model and is therefore used as the default configuration for the _spoox_ terminal CLI.
 
+> **Note:** The corresponding paper defining the _spoox_ MAS design heuristics will be published soon and linked here.
 
-### Key Features & Use Cases
+---
 
+### Key Features
 
+#### Terminal-Native Design
 
+The spoox CLI agent systems are explicitly designed for terminal environments, covering a broad range of tasks:
+- Simple operating system operations
+- Complex server management workflows
+- Typical software engineering challenges
 
+#### Intuitive CLI
 
-#### CLI reusability
+The CLI provides a straightforward developer experience with:
+- **Safety mechanisms**: Critical command execution confirmation loops.
+- **Interactive feedback**: User clarification and feedback loops.
+- **Progress tracking**: Comprehensive structured logging during task execution.
 
+#### Extensible Framework
 
-#### spoox framework complient components
+All main components are designed for reuse and implementing custom multi-agent systems following Spoox design heuristics.
+- **`BaseGroupChatAgent`**: Agent implementation that follows _spoox_ heuristics and is built on _AutoGen_.
+- **`AgentSystem`**: Quick MAS configuration by combining multiple `BaseGroupChatAgent` instances.
+- **`Environment` and `Interface`**: Choose from existing implementations or define custom ones.
+
+---
 
 ### Installation
 
-Pre-requisites before installation: python >= 3.10
+#### Prerequisites
+
+- Python >= 3.10
+
+#### Install via pip
 
 ```shell
 pip install spoox
 ```
 
+---
+
 ### Getting Started
 
-Before running spoox one has to make sure that the required envrionment values are setup and software installed for 
-providing a model client to the agent. 
-The spoox agent supports three different model clients for now, OpenAI, Anthropic and Ollama.
-Based on the model client one wants to use the follwoign steps must be fulfilled:
+#### 1. Configure Model Client
 
-host = "http://host.docker.internal:11434" if docker_access else "http://localhost:11434"
+_Spoox CLI_ supports three model clients: **OpenAI**, **Anthropic**, and **Ollama**. 
+Configure the appropriate client before running _spoox CLI_.
 
+#### Ollama
 
-#### Configure model client API key
+Set the `OLLAMA` environment variable to the Ollama server URL. Typically, Ollama runs locally on port 11434:
+```shell
+export OLLAMA=http://localhost:11434
+```
 
+**Docker users:** If _spoox CLI_ runs in a Docker container but Ollama runs on the host machine, 
+use `export OLLAMA=http://host.docker.internal:11434`.
+
+#### Anthropic
+
+Set your API key as an environment variable:
+```sh
+export ANTHROPIC_API_KEY=<api_key>
+```
+
+#### OpenAI
+
+Set your API key as an environment variable:
+```sh
+export OPENAI_API_KEY=<api_key>
+```
 
 #### Start spoox CLI
 
-To run the spoox CLI simply open a terminal and call the `spoox` command.
+Start the CLI by simply running: 
 ```shell
 spoox
 ```
-Several parameters can be passed to the command up front like the `model_client_id` (`-c`) and `model_id` (`-m`),
-however the spoox CLI automatically ask for important parameters on start and remembers previously selected choices.
 
-Thats basically it, the spoox CLI provides a straightforward and user-friendly CLI explaining everything on the way.
+Several parameters can be passed to the command upfront, such as `spoox -c openai -m gpt-5-mini`. 
+However, the _spoox CLI_ automatically guides you through any remaining setup after startup and remembers previous selections.
+Simply follow the on-screen prompts to interact with your agent system.
+
+
+---
 
 ### Authors
 
