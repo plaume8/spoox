@@ -53,25 +53,17 @@ def main() -> None:
         default=False,
         help="Show detailed logs (bool)."
     )
-    parser.add_argument(
-        "-d",
-        "--in-docker",
-        required=False,
-        default=False,
-        help="Should be set to True if called within a Docker container and using the Ollama model client (-c ollama)."
-    )
 
     args = parser.parse_args()
     client_id = str(args.model_client_id)
     model_id = str(args.model_id)
     agent_id = str(args.agent_id)
     logging = str(args.logging).lower() in ("yes", "true", "t", "y")
-    in_docker = str(args.in_docker).lower() in ("yes", "true", "t", "y")
 
     load_dotenv()
 
     # setup and run agent system
-    model_client = setup_model_client(client_id=client_id, model_id=model_id, docker_access=in_docker)
+    model_client = setup_model_client(client_id=client_id, model_id=model_id)
     environment = LocalEnvironment()
     interface = CLInterface(logging_active=logging)
     agent = setup_agent_system(agent_id, model_client, environment, interface, logs_dir=Path('/tmp/spoox'))

@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from autogen_core.models import ChatCompletionClient
@@ -14,21 +15,19 @@ from spoox.environment.environment import Environment
 from spoox.interface.interface import Interface
 
 
-def setup_model_client(client_id: str, model_id: str, docker_access: bool = False) -> ChatCompletionClient:
+def setup_model_client(client_id: str, model_id: str) -> ChatCompletionClient:
     """
     Based on the provided client_id and model_id, the corresponding model client instance is created.
 
     :param client_id: The base model client, options: 'ollama', 'openai', 'anthropic'.
     :param model_id: the actual model id (e.g. 'qwen3:8b', 'claude-sonnet-4-5-20250929').
-    :param docker_access: Should be set to True if the agent system is running inside a Docker container
-    and uses the Ollama model client (client_id='ollama').
     :return: Model client ready to be used by the agent system.
     """
 
-    host = "http://host.docker.internal:11434" if docker_access else "http://localhost:11434"
-
     if client_id == 'ollama':
-        # special exception for gpt-oss models -> ollama requires a model_info -> todo test if still necessary
+        # get ollama endpoint
+        host = os.environ['OLLAMA']
+        # special exception for gpt-oss models -> ollama not keeps a pre-set model_info -> todo test if still necessary
         if model_id in ["gpt-oss:20b", "gpt-oss:120b"]:
             model_info = {
                 "vision": False,

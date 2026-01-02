@@ -56,13 +56,6 @@ def main() -> None:
         help="Print solution process in terminal (bool).",
     )
     parser.add_argument(
-        "-d",
-        "--in-docker",
-        required=False,
-        default=False,
-        help="Should be set to True if called within a Docker container and using the Ollama model client (-c ollama)."
-    )
-    parser.add_argument(
         "-t",
         "--task",
         required=True,
@@ -88,7 +81,6 @@ def main() -> None:
     model_id = str(args.model_id)
     agent_id = str(args.agent_id)
     print_reasoning = str(args.print_reasoning).lower() in ("yes", "true", "t", "y")
-    in_docker = str(args.in_docker).lower() in ("yes", "true", "t", "y")
     task = str(args.task)
     logs_dir = Path(str(args.logs_dir))
     max_timeout = int(args.max_timeout)
@@ -96,7 +88,7 @@ def main() -> None:
     load_dotenv()
 
     # setup model client and environment
-    model_client = setup_model_client(client_id=client_id, model_id=model_id, docker_access=in_docker)
+    model_client = setup_model_client(client_id=client_id, model_id=model_id)
     environment = LocalEnvironment()
 
     # setup headless interface -> using log interface
