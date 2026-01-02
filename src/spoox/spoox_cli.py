@@ -9,13 +9,16 @@ from spoox.environment import LocalEnvironment
 from spoox.interface import CLInterface
 from spoox.utils import setup_model_client, setup_agent_system
 
-nest_asyncio.apply()
-
 
 """
 example usage:
-python src/spoox/spoox_cli.py -m gpt-5-mini -a mas-group-chat-m -l False -d False -e False
+python src/spoox/spoox_cli.py -m gpt-5-mini -a spoox-m -l False -d False -e False
 """
+
+nest_asyncio.apply()
+
+LOGS_DIR = Path('/tmp/spoox')
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def main() -> None:
@@ -44,7 +47,7 @@ def main() -> None:
         "--agent-id",
         required=False,
         default="singleton",
-        help="Agent id (e.g. 'singleton', 'mas-group-chat-m') (str)."
+        help="Agent id (e.g. 'singleton', 'spoox-m') (str)."
     )
     parser.add_argument(
         "-l",
@@ -66,7 +69,7 @@ def main() -> None:
     model_client = setup_model_client(client_id=client_id, model_id=model_id)
     environment = LocalEnvironment()
     interface = CLInterface(logging_active=logging)
-    agent = setup_agent_system(agent_id, model_client, environment, interface, logs_dir=Path('/tmp/spoox'))
+    agent = setup_agent_system(agent_id, model_client, environment, interface, logs_dir=LOGS_DIR)
     try:
         asyncio.run(agent.start())
     except Exception as e:

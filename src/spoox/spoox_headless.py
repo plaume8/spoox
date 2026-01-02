@@ -14,7 +14,7 @@ nest_asyncio.apply()
 
 """
 example usage:
-python src/spoox/spoox_headless.py -c openai -m gpt-5-mini -a mas-group-chat-m -t "create an empty file named dodo in the current dir"
+python src/spoox/spoox_headless.py -c openai -m gpt-5-mini -a spoox-m -t "create an empty file named dodo in the current dir"
 """
 
 
@@ -46,7 +46,7 @@ def main() -> None:
         "--agent-id",
         required=False,
         default="singleton",
-        help="Agent id (e.g. 'singleton', 'mas-group-chat-m') (str)."
+        help="Agent id (e.g. 'singleton', 'spoox-m') (str)."
     )
     parser.add_argument(
         "-r",

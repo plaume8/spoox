@@ -1,10 +1,10 @@
 
 <img src="_others/spoox_transparent_icon_512x512.png" width="40" />
 
-## SPOOX 
-
 <br>
-  
+
+# SPOOX
+
 **SPOOX – SPlit lOOp eXpand**
 
 A terminal-integrated, LLM-powered multi-agent system (MAS) designed to assist developers directly within their terminal.
