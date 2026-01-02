@@ -1,13 +1,12 @@
 import argparse
 import asyncio
-import time
 from pathlib import Path
 
 import nest_asyncio
 from dotenv import load_dotenv
 
-from spoox.environment.LocalEnvironment import LocalEnvironment
-from spoox.interface.LogInterface import LogInterface
+from spoox.environment.local_environment import LocalEnvironment
+from spoox.interface.log_interface import LogInterface
 from spoox.utils import setup_model_client, setup_agent_system
 
 nest_asyncio.apply()
@@ -90,13 +89,7 @@ def main() -> None:
     environment = LocalEnvironment()
 
     # setup headless interface -> using log interface
-    interface = LogInterface(
-        logging_active=True,
-        print_live=print_reasoning,
-        feedback_iterations_max=0,  # just a placeholder; not supported by terminal bench
-        eval_file_path=f"task_eval.py",  # just a placeholder; not supported by terminal bench
-        home_dir_path='..',  # just a placeholder; not supported by terminal bench
-    )
+    interface = LogInterface(logging_active=True, print_live=print_reasoning)
     interface.user_delegate.user_input = [task, 'q']
     interface.user_delegate.default_user_choice = 'confirm'
 

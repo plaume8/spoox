@@ -56,7 +56,7 @@ class Interface(ABC):
         pass
 
     @abstractmethod
-    def request_select_choice(self, question: str, choices: [str]) -> str:
+    def request_select_choice(self, question: str, choices: list[str]) -> str:
         """Requests the user to select one item from choices."""
         pass
 
