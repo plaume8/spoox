@@ -13,8 +13,8 @@ from spoox.agents.mas.agents import ExplorerAgent
 from spoox.agents.mas.agents import SolverAgent
 from spoox.agents.mas.agents import SummarizerAgent
 from spoox.agents.mas.agents import TesterAgent
-from spoox.environment.Environment import Environment
-from spoox.interface.Interface import Interface
+from spoox.environment import Environment
+from spoox.interface import Interface
 
 
 class SpooxMedium(AgentSystem):

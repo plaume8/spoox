@@ -6,9 +6,8 @@ from autogen_core.tools import BaseTool
 from pydantic import BaseModel, Field, model_serializer
 from typing_extensions import Self
 
-from spoox.environment._utils import output_truncat
-from spoox.environment.code_executors.CodeExecutorLocal import CodeBlockTimeout
-
+from spoox.environment.code_executors.code_executor_local import CodeBlockTimeout
+from spoox.environment.tools.utils import output_truncat
 
 """
 For human developers, opening a terminal and executing simple Bash commands serves as the standard lightweight interface 

@@ -1,18 +1,23 @@
 import os
+from importlib.metadata import version
 from pathlib import Path
 
+import art
+from art import tprint
+from art.params import FONT_MAP
 from autogen_core.models import ChatCompletionClient
 from autogen_ext.models.anthropic import AnthropicChatCompletionClient
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from autogen_ext.models.ollama import OllamaChatCompletionClient
+from rich.console import Console
 
 from spoox.agents import AgentSystem
 from spoox.agents import SpooxLarge
 from spoox.agents import SpooxMedium
 from spoox.agents import SpooxSmall
 from spoox.agents import SingletonAgentSystem
-from spoox.environment.environment import Environment
-from spoox.interface.interface import Interface
+from spoox.environment import Environment
+from spoox.interface import Interface
 
 
 def setup_model_client(client_id: str, model_id: str) -> ChatCompletionClient:
@@ -63,3 +68,26 @@ def setup_agent_system(agent_system_id: str, model_client: ChatCompletionClient,
     if agent_system_id == "mas-group-chat-l":
         return SpooxLarge(interface, model_client, environment, timeout, logs_dir)
     raise ValueError(f"Selected agent system '{agent_system_id}' not known.")
+
+def print_spoox_cli_header():
+    """Print spoox cli static header."""
+
+    console = Console()
+    console.rule(characters="–", style="grey30")
+    tprint("spoox CLI", font='tarty2', space=1)  # decent font options: 'soft', 'tarty2'
+    console.print("👻  Welcome to the spoox CLI", style="bold")
+    console.print("👻  Version: {version('spoox')}", style="dim")  # todo activate
+    console.print("👻  GitHub: https://github.com/plaume8/spoox", style="dim")
+    console.print("")
+    console.print("👻  Spoox CLI is a terminal-integrated, LLM-powered multi-agent system designed to", style="dim")
+    console.print("👻  assist developers directly within their terminal. It provides intelligent ", style="dim")
+    console.print("👻  assistance for OS tasks, server management workflows, and software engineering challenges.", style="dim")
+    console.print("👻  The architectures of the integrated agent systems are based on the spoox MAS design framework, ", style="dim")
+    console.print("👻  a generic architectural framework for multi-agent topology and communication design.", style="dim")
+    console.print("")
+    console.rule(characters="–", style="grey30")
+
+
+
+if __name__ == '__main__':
+    print_spoox_cli_header()

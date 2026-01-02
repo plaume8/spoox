@@ -7,8 +7,8 @@ from autogen_core.models import UserMessage, ChatCompletionClient
 from spoox.agents.agent_system import AgentSystem
 from spoox.agents.singleton.messages import PublicMessage
 from spoox.agents.singleton.singelton_agent import SingletonAgent
-from spoox.environment.Environment import Environment
-from spoox.interface.Interface import Interface
+from spoox.environment import Environment
+from spoox.interface import Interface
 
 
 class SingletonAgentSystem(AgentSystem):

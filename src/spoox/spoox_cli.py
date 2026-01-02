@@ -5,8 +5,8 @@ from pathlib import Path
 import nest_asyncio
 from dotenv import load_dotenv
 
-from spoox.environment.local_environment import LocalEnvironment
-from spoox.interface.cli_interface import CLInterface
+from spoox.environment import LocalEnvironment
+from spoox.interface import CLInterface
 from spoox.utils import setup_model_client, setup_agent_system
 
 nest_asyncio.apply()
@@ -14,7 +14,7 @@ nest_asyncio.apply()
 
 """
 example usage:
-python src/spoox/spoox.py -m gpt-5-mini -a mas-group-chat-m -l False -d False -e False
+python src/spoox/spoox_cli.py -m gpt-5-mini -a mas-group-chat-m -l False -d False -e False
 """
 
 

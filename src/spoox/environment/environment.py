@@ -5,7 +5,7 @@ from autogen_core import FunctionCall, CancellationToken, BaseAgent
 from autogen_core.models import FunctionExecutionResult
 from autogen_core.tools import BaseTool
 
-from spoox.interface.Interface import Interface
+from spoox.interface import Interface
 
 
 class Environment(ABC):

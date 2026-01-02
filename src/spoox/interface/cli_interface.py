@@ -5,8 +5,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 
-from spoox.interface.interface import CLIColor
-from spoox.interface.interface import Interface
+from spoox.interface.interface import Interface, CLIColor
 
 
 class CLInterface(Interface):

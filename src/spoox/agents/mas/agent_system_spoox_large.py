@@ -15,8 +15,8 @@ from spoox.agents.mas.agents import SubTaskPlannerAgent
 from spoox.agents.mas.agents import SummarizerAgent
 from spoox.agents.mas.agents import TesterAgent
 from spoox.agents.mas.agents import RefinerAgent
-from spoox.environment.Environment import Environment
-from spoox.interface.Interface import Interface
+from spoox.environment import Environment
+from spoox.interface import Interface
 
 
 class SpooxLarge(AgentSystem):

@@ -7,8 +7,7 @@ from autogen_core.models import SystemMessage, LLMMessage, AssistantMessage, \
     FunctionExecutionResultMessage, CreateResult
 
 from spoox.agents.agent_system import AgentSystem
-from spoox.agents.errors import ModelClientError, MaxOnlyTextMessagesError, MaxIterationsError, \
-    AgentError
+from spoox.agents.errors import ModelClientError, MaxOnlyTextMessagesError, MaxIterationsError, AgentError
 from spoox.agents.singleton.messages import PublicMessage
 from spoox.agents.singleton.prompts import get_SINGLETON_SYSTEM_PROMPT
 

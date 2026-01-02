@@ -1,20 +1,20 @@
 
 <img src="_others/spoox_transparent_icon_512x512.png" width="40" />
 
-## SPOOX
+## SPOOX 
 
 <br>
   
 **SPOOX – SPlit lOOp eXpand**
 
-A terminal-integrated, LLM-powered multi-agent system (MAS) designed to assist developers directly within their terminal environment.
-_Spoox_ provides intelligent assistance for OS tasks, server management workflows, and software engineering challenges.
+A terminal-integrated, LLM-powered multi-agent system (MAS) designed to assist developers directly within their terminal.
+_Spoox CLI_ provides intelligent assistance for OS tasks, server management workflows, and software engineering challenges.
 The architectures of these agent systems are based on the _spoox_ MAS design framework,
 a generic architectural framework for multi-agent topology and communication design. 
 
 Several differently scaled terminal MAS variants have been developed and are accessible through a terminal CLI: _spoox-s_, _spoox-m_, and _spoox-l_.
 The spoox-m variant achieved first place on the [Terminal Bench leaderboard](https://www.tbench.ai/leaderboard/terminal-bench/2.0?models=GPT-5-Mini) 
-for the gpt-5-mini model and is therefore used as the default configuration for the _spoox_ terminal CLI.
+for the gpt-5-mini model and is therefore used as the default configuration for the _spoox CLI_.
 
 > **Note:** The corresponding paper defining the _spoox_ MAS design heuristics will be published soon and linked here.
 
@@ -32,16 +32,16 @@ The spoox CLI agent systems are explicitly designed for terminal environments, c
 #### Intuitive CLI
 
 The CLI provides a straightforward developer experience with:
-- **Safety mechanisms**: Critical command execution confirmation loops.
-- **Interactive feedback**: User clarification and feedback loops.
-- **Progress tracking**: Comprehensive structured logging during task execution.
+- Safety mechanisms: Critical command execution confirmation loops.
+- Interactive feedback: User clarification and feedback loops.
+- Progress tracking: Comprehensive structured logging during task execution.
 
 #### Extensible Framework
 
 All main components are designed for reuse and implementing custom multi-agent systems following Spoox design heuristics.
-- **`BaseGroupChatAgent`**: Agent implementation that follows _spoox_ heuristics and is built on _AutoGen_.
-- **`AgentSystem`**: Quick MAS configuration by combining multiple `BaseGroupChatAgent` instances.
-- **`Environment` and `Interface`**: Choose from existing implementations or define custom ones.
+- `BaseGroupChatAgent`: Agent implementation that follows _spoox_ heuristics and is built on _AutoGen_.
+- `AgentSystem`: Quick MAS configuration by combining multiple `BaseGroupChatAgent` instances.
+- `Environment` and `Interface`: Choose from existing implementations or define custom ones.
 
 ---
 

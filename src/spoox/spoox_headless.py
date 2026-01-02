@@ -5,8 +5,8 @@ from pathlib import Path
 import nest_asyncio
 from dotenv import load_dotenv
 
-from spoox.environment.local_environment import LocalEnvironment
-from spoox.interface.log_interface import LogInterface
+from spoox.environment import LocalEnvironment
+from spoox.interface import LogInterface
 from spoox.utils import setup_model_client, setup_agent_system
 
 nest_asyncio.apply()

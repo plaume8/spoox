@@ -1,4 +1,5 @@
 from .agent_system import AgentSystem
+from .errors import AgentError
 from .errors import ModelClientError
 from .errors import MaxOnlyTextMessagesError
 from .errors import MaxIterationsError
@@ -19,6 +20,7 @@ __all__ = [
     "SpooxMedium",
     "SpooxSmall",
 
+    "AgentError",
     "ModelClientError",
     "MaxOnlyTextMessagesError",
     "MaxIterationsError",

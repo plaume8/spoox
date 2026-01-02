@@ -8,8 +8,8 @@ from pathlib import Path
 
 from autogen_core import SingleThreadedAgentRuntime
 from autogen_core.models import ChatCompletionClient
-from spoox.environment.Environment import Environment
-from spoox.interface.Interface import Interface
+from spoox.environment import Environment
+from spoox.interface import Interface
 
 
 class AgentSystem(ABC):
