@@ -19,6 +19,7 @@ class ExecInput(BaseModel):
 
 _AGENT_ID = "mas-group-chat-l"  # "singleton",'mas-group-chat-s','mas-group-chat-m','mas-group-chat-l'
 _AGENT_ID_CHAR = "l"  # "singleton",'s','m','l'
+_MODEL_CLIENT_ID = "openai"  # "ollama", "openai", "anthropic"
 _MODEL_ID = "gpt-5-nano"  # "gpt-oss:20b","qwen3:14b","claude-sonnet-4-5","magistral:24b","gpt-5","gpt-5-mini","gpt-5-nano"
 
 
@@ -49,7 +50,7 @@ class Spoox(BaseInstalledAgent):
         load_dotenv()
         openai_api_key = str(os.environ.get("OPENAI_API_KEY"))
         safe_instruction = shlex.quote(instruction)
-        cmd = f". /opt/venv/bin/activate && spoox -m {_MODEL_ID} -a {_AGENT_ID} -l {_DOCKER_LOGS_DIR} -x {_AGENT_MAX_TIMEOUT} -t {safe_instruction}"
+        cmd = f". /opt/venv/bin/activate && spoox -c {_MODEL_CLIENT_ID} -m {_MODEL_ID} -a {_AGENT_ID} -l {_DOCKER_LOGS_DIR} -x {_AGENT_MAX_TIMEOUT} -t {safe_instruction}"
         return [ExecInput(command=cmd, env={"OPENAI_API_KEY": openai_api_key})]
 
     def populate_context_post_run(self, context: AgentContext) -> None:

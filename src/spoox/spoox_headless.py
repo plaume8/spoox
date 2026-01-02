@@ -11,14 +11,20 @@ from spoox.utils import setup_model_client, setup_agent_system
 
 nest_asyncio.apply()
 
+
 """
 example usage:
-python src/spoox/spoox_headless.py -m gpt-5-mini -a singleton -t "create an empty file named dodo in the current dir"
+python src/spoox/spoox_headless.py -c openai -m gpt-5-mini -a mas-group-chat-m -t "create an empty file named dodo in the current dir"
 """
 
 
 def main() -> None:
-    """Entry point for the spoox CLI."""
+    """
+    This CLI script configures and runs a **headless** agent system.
+    Executes the agent system with a given task description and exits after the first run.
+    Does not wait for interactive user input.
+    Typically used for running benchmarks automatically.
+    """
 
     parser = argparse.ArgumentParser(description="Spoox argument parser")
     parser.add_argument(
@@ -26,73 +32,71 @@ def main() -> None:
         "--model-client-id",
         required=False,
         default="openai",
-        help="Model client, options: 'ollama', 'openai', 'anthropic'",
+        help="Model client, options: 'ollama', 'openai', 'anthropic'.",
     )
     parser.add_argument(
         "-m",
         "--model-id",
         required=False,
         default="gpt-5-mini",
-        help="Model id (str)",
+        help="Model id (str).",
     )
     parser.add_argument(
         "-a",
         "--agent-id",
         required=False,
         default="singleton",
-        help="Agent id (str)",
+        help="Agent id (e.g. 'singleton', 'mas-group-chat-m') (str)."
     )
     parser.add_argument(
         "-r",
         "--print-reasoning",
         required=False,
         default=True,
-        help="Print reasoning process in terminal, default set to true (bool)",
+        help="Print solution process in terminal (bool).",
     )
     parser.add_argument(
         "-d",
         "--in-docker",
         required=False,
         default=False,
-        help="Should be set to true if called within a docker container and using Ollama model (bool)",
+        help="Should be set to True if called within a Docker container and using the Ollama model client (-c ollama)."
     )
     parser.add_argument(
         "-t",
         "--task",
         required=True,
-        help="Task description (str)",
+        help="Task description provided to the agent system at start (str).",
     )
     parser.add_argument(
         "-l",
         "--logs-dir",
         required=False,
         default="/tmp/spoox",
-        help="Logs dir path (str)",
+        help="Logs dir path (str).",
     )
     parser.add_argument(
         "-x",
         "--max-timeout",
         required=False,
         default=3600,  # 60min default max
-        help="Max timeout in seconds (int)",
+        help="Max timeout in seconds (int).",
     )
 
     args = parser.parse_args()
     client_id = str(args.model_client_id)
     model_id = str(args.model_id)
     agent_id = str(args.agent_id)
-    print_reasoning = str(args.print_reasoning).lower() in ("yes", "true", "t", "y", "1")
-    in_docker = str(args.in_docker).lower() in ("yes", "true", "t", "y", "1")
+    print_reasoning = str(args.print_reasoning).lower() in ("yes", "true", "t", "y")
+    in_docker = str(args.in_docker).lower() in ("yes", "true", "t", "y")
     task = str(args.task)
     logs_dir = Path(str(args.logs_dir))
     max_timeout = int(args.max_timeout)
 
     load_dotenv()
 
-    # setup model client
+    # setup model client and environment
     model_client = setup_model_client(client_id=client_id, model_id=model_id, docker_access=in_docker)
-
-    # setup environment and interface
     environment = LocalEnvironment()
 
     # setup headless interface -> using log interface
