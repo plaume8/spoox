@@ -27,11 +27,11 @@ class CLInterface(Interface):
 
     def request_user_input(self, query: str) -> str:
         """Requests arbitrary text input from the user."""
-        return questionary.text(query).ask()
+        return questionary.text(query, qmark='👻 ').ask()
 
     def request_select_choice(self, question: str, choices: list[str]) -> str:
         """Requests the user to select one item from choices."""
-        return questionary.select(question, choices).ask()
+        return questionary.select(question, choices, qmark='👻 ').ask()
 
     def reset(self) -> None:
         """Resets the interface."""
