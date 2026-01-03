@@ -11,9 +11,10 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 
-console = Console()
 
+_console = Console()
 _spinner = None
+_config_process_lines_tracker = 0
 
 CONFIG_FORM = {
     'model_client_id': {
@@ -52,33 +53,33 @@ def print_cli_header():
     except PackageNotFoundError:
         spoox_version = None
 
-    console.rule(characters="—", style="grey30")
+    _console.rule(characters="—", style="grey30")
     tprint("spoox CLI", font='tarty2', space=1)  # decent font options: 'soft', 'tarty2'
-    console.print("👻  Welcome to the spoox CLI", style="bold")
+    _console.print("👻  Welcome to the spoox CLI", style="bold")
     if spoox_version is not None:
-        console.print(f"👻  Version: {spoox_version}", style="dim")
-    console.print("👻  GitHub: https://github.com/plaume8/spoox", style="dim")
-    console.print("")
-    console.print("👻  Spoox CLI is a terminal-integrated, LLM-powered multi-agent system that assists with tasks", style="dim")
-    console.print("👻  ranging from simple OS operations to complex SE challenges, directly in the terminal.", style="dim")
-    console.print("👻  The integrated agent systems are based on the spoox MAS design framework,", style="dim")
-    console.print("👻  a generic architectural framework for multi-agent topology and communication design.", style="dim")
-    console.print("")
-    console.rule(characters="—", style="grey30")
-    console.print("")
+        _console.print(f"👻  Version: {spoox_version}", style="dim")
+    _console.print("👻  GitHub: https://github.com/plaume8/spoox", style="dim")
+    _console.print("")
+    _console.print("👻  Spoox CLI is a terminal-integrated, LLM-powered multi-agent system that assists with tasks", style="dim")
+    _console.print("👻  ranging from simple OS operations to complex SE challenges, directly in the terminal.", style="dim")
+    _console.print("👻  The integrated agent systems are based on the spoox MAS design framework,", style="dim")
+    _console.print("👻  a generic architectural framework for multi-agent topology and communication design.", style="dim")
+    _console.print("")
+    _console.rule(characters="—", style="grey30")
+    _console.print("")
 
 
 def print_cli_footer(agent_id: str):
     """Print spoox cli static footer."""
 
-    console.print(f"👻  Agent system '{agent_id}' initialized successfully.", style="dim")
-    console.print("👻  Typical use cases include:", style="dim")
-    console.print("👻  - ‘Analyze the Apache logs and answer the question …’", style="dim")
-    console.print("👻  - ‘For my newly created Python script, create a comprehensive test suite …’", style="dim")
-    console.print("👻  - ‘I configured a Node server but it continues to fail. Help me fix it …’", style="dim")
-    console.print("")
-    console.print("👻  Ready to get to work! Just type in your task, question, or challenge.", style="bold")
-    console.print(f"👻  Type 'q' exit.", style="dim")
+    _console.print(f"👻  Agent system '{agent_id}' initialized successfully.", style="dim")
+    _console.print("👻  Typical use cases include:", style="dim")
+    _console.print("👻  - ‘Analyze the Apache logs and answer the question …’", style="dim")
+    _console.print("👻  - ‘For my newly created Python script, create a comprehensive test suite …’", style="dim")
+    _console.print("👻  - ‘I configured a Node server but it continues to fail. Help me fix it …’", style="dim")
+    _console.print("")
+    _console.print("👻  Ready to get to work! Just type in your task, question, or challenge.", style="bold")
+    _console.print(f"👻  Type 'q' exit.", style="dim")
 
 
 def start_loading():
@@ -93,6 +94,12 @@ def stop_loading():
     global _spinner
     if _spinner:
         _spinner.stop()
+
+
+def clear_lines(num_lines: int):
+    """Clear the specified number of lines from the terminal."""
+    for _ in range(num_lines):
+        _console.print("\033[F\033[K", end="")  # Move up and clear line
 
 
 async def confirm_cli_config(config: dict, logs_dir: Path, cache_config: bool = True) -> dict:
@@ -111,20 +118,25 @@ async def confirm_cli_config(config: dict, logs_dir: Path, cache_config: bool = 
             config = cached_config
 
     # ask user to confirm config
-    console.print("👻  Final configuration:")
+    _console.print("👻  Final configuration:")
     md = Markdown(f"```yaml\n{'\n'.join([f"{a}: {f['value']}" for a, f in config.items()])}\n```")
-    console.print(Panel(md, style='#555555'))
+    _console.print(Panel(md, style='#555555'))
     if not questionary.confirm("Please confirm the config ?", qmark='👻 ').ask():
         config_cache.unlink(missing_ok=True)
         config = await confirm_cli_config(copy.deepcopy(CONFIG_FORM), logs_dir, cache_config=False)
 
-    # cache config
+
     if cache_config:
+        # cache config
         with config_cache.open("w") as file:
             yaml.dump(config, file)
-        console.print("")
-        console.rule(characters="—", style="grey30")
-        console.print("")
+        # remove config process and sum up config in one line
+        global _config_process_lines_tracker
+        clear_lines(_config_process_lines_tracker)
+        _config_process_lines_tracker = 0
+        _console.print("")
+        _console.rule(characters="—", style="grey30")
+        _console.print("")
     return config
 
 
@@ -144,7 +156,7 @@ def load_cached_cli_config(config_cache: Path) -> Optional[dict]:
         elif any(a not in last_config.keys() for a in CONFIG_FORM.keys()):
             last_config = None
     if last_config is not None:
-        console.print("👻  We found a cached spoox CLI configuration.", style="dim")
+        _console.print("👻  We found a cached spoox CLI configuration.", style="dim")
     return last_config
 
 
@@ -152,7 +164,7 @@ async def fill_cli_config(config: dict, request_all: bool = True) -> dict:
     """CLI process for filling a spoox config."""
 
     # get all user inputs
-    console.print("👻  Complete the following steps to config the spoox CLI:", style="dim")
+    _console.print("👻  Complete the following steps to config the spoox CLI:", style="dim")
     for id, form in config.items():
         user_input = None
         default = form.get('default', None)
