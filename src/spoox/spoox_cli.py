@@ -9,8 +9,7 @@ from dotenv import load_dotenv
 from spoox.environment import LocalEnvironment
 from spoox.interface import CLInterface
 from spoox.utils import setup_model_client, setup_agent_system
-from spoox.utils_cli import CONFIG_FORM, confirm_cli_config, print_cli_header, start_loading_circle, \
-    stop_loading_circle, print_cli_footer
+from spoox.utils_cli import CONFIG_FORM, confirm_cli_config, print_cli_header, start_loading, stop_loading, print_cli_footer
 
 """
 example usage:
@@ -63,22 +62,19 @@ def main() -> None:
     config['model_client_id']['value'] = str(args.model_client_id) if args.model_client_id else None
     config['model_id']['value'] = str(args.model_id) if args.model_id else None
     config['agent_id']['value'] = str(args.agent_id) if args.agent_id else None
-    if args.logging:
-        if str(args.logging.lower()) in ("yes", "true", "t", "y"):
-            config['logging_mode']['value'] = 'minimal logging'
-        else:
-            config['logging_mode']['value'] = 'detailed logging'
+    if args.logging is not None:
+        config['debugging_mode']['value'] = 'yes' if str(args.logging.lower()) in ("yes", "true", "t", "y") else 'no'
     config = asyncio.run(confirm_cli_config(config, LOGS_DIR))
 
     # setup and run agent system
-    start_loading_circle()
+    start_loading()
     load_dotenv()
     model_client = setup_model_client(client_id=config['model_client_id']['value'], model_id=config['model_id']['value'])
     environment = LocalEnvironment()
-    interface = CLInterface(logging_active=config['model_client_id']['value'] == 'detailed logging')
+    interface = CLInterface(logging_active=config['debugging_mode']['value'] == 'yes')
     agent = setup_agent_system(config['agent_id']['value'], model_client, environment, interface, logs_dir=LOGS_DIR)
-    stop_loading_circle()
-    print_cli_footer(config['agent_id'])
+    stop_loading()
+    print_cli_footer(config['agent_id']['value'])
     try:
         asyncio.run(agent.start())
     except Exception as e:

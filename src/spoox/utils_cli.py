@@ -1,9 +1,8 @@
 import copy
-from yaspin import yaspin
-
 import questionary
 import yaml
 
+from yaspin import yaspin
 from importlib.metadata import version, PackageNotFoundError
 from pathlib import Path
 from typing import Optional
@@ -11,7 +10,6 @@ from art import tprint
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
-
 
 console = Console()
 
@@ -26,7 +24,7 @@ CONFIG_FORM = {
     },
     'model_id': {
         'type': 'input',
-        'prompt': "Please provide a model id (e.g. 'gpt-5-mini', 'claude-sonnet-4-5'):",
+        'prompt': "Please provide a model id (e.g. 'claude-sonnet-4-5', 'gpt-5-mini'):",
         'value': None,
     },
     'agent_id': {
@@ -36,11 +34,11 @@ CONFIG_FORM = {
         'default': 'spoox-m',
         'value': None,
     },
-    'logging_mode': {
+    'debugging_mode': {
         'type': 'choice',
-        'prompt': "Please select a logging mode:",
-        'choices': ['minimal logging', 'detailed logging'],
-        'default': 'minimal logging',
+        'prompt': "Activate debugging mode:",
+        'choices': ['no', 'yes'],
+        'default': 'no',
         'value': None,
     }
 }
@@ -69,35 +67,35 @@ def print_cli_header():
     console.rule(characters="—", style="grey30")
     console.print("")
 
+
 def print_cli_footer(agent_id: str):
     """Print spoox cli static footer."""
 
     console.print(f"👻  Agent system '{agent_id}' initialized successfully.", style="dim")
-    console.print("👻  Ready to get to work! Just type in your task, question, or challenge.")
     console.print("👻  Typical use cases include:", style="dim")
-    console.print("👻  - Analyze the Apache logs and answer the question...", style="dim")
-    console.print("👻  - For my newly created Python script, create a comprehensive test suite ...", style="dim")
-    console.print("👻  - I configured a Node server but it continues to fail. Help me fix it ...", style="dim")
+    console.print("👻  - ‘Analyze the Apache logs and answer the question …’", style="dim")
+    console.print("👻  - ‘For my newly created Python script, create a comprehensive test suite …’", style="dim")
+    console.print("👻  - ‘I configured a Node server but it continues to fail. Help me fix it …’", style="dim")
     console.print("")
-    console.rule(characters="—", style="grey30")
-    console.print("")
+    console.print("👻  Ready to get to work! Just type in your task, question, or challenge.", style="bold")
+    console.print(f"👻  Type 'q' exit.", style="dim")
 
 
-def start_loading_circle():
-    """Start a loading circle animation in the terminal."""
+def start_loading():
+    """Start a loading animation in the terminal."""
     global _spinner
     _spinner = yaspin(text="Loading...", color="cyan")
     _spinner.start()
 
 
-def stop_loading_circle():
-    """Stop the loading circle animation."""
+def stop_loading():
+    """Stop the loading animation."""
     global _spinner
     if _spinner:
         _spinner.stop()
 
 
-async def confirm_cli_config(config: dict, logs_dir: Path, first_call: bool = True) -> dict:
+async def confirm_cli_config(config: dict, logs_dir: Path, cache_config: bool = True) -> dict:
     """CLI for filling, confirming and caching a valid spoox config."""
 
     # if any value was filled already in the config, request the remaining attributes;
@@ -107,7 +105,7 @@ async def confirm_cli_config(config: dict, logs_dir: Path, first_call: bool = Tr
         config = await fill_cli_config(config)
     else:
         cached_config = load_cached_cli_config(config_cache)
-        if first_call and cached_config is None:
+        if cached_config is None:
             config = await fill_cli_config(config)
         else:
             config = cached_config
@@ -117,10 +115,11 @@ async def confirm_cli_config(config: dict, logs_dir: Path, first_call: bool = Tr
     md = Markdown(f"```yaml\n{'\n'.join([f"{a}: {f['value']}" for a, f in config.items()])}\n```")
     console.print(Panel(md, style='#555555'))
     if not questionary.confirm("Please confirm the config ?", qmark='👻 ').ask():
-        config = await confirm_cli_config(copy.deepcopy(CONFIG_FORM), logs_dir, first_call=False)
+        config_cache.unlink(missing_ok=True)
+        config = await confirm_cli_config(copy.deepcopy(CONFIG_FORM), logs_dir, cache_config=False)
 
     # cache config
-    if first_call:
+    if cache_config:
         with config_cache.open("w") as file:
             yaml.dump(config, file)
         console.print("")
@@ -171,5 +170,3 @@ async def fill_cli_config(config: dict, request_all: bool = True) -> dict:
     # todo check if model exists for model_id
 
     return config
-
-
