@@ -1,5 +1,6 @@
 import copy
-import os
+from yaspin import yaspin
+
 import questionary
 import yaml
 
@@ -13,6 +14,8 @@ from rich.panel import Panel
 
 
 console = Console()
+
+_spinner = None
 
 CONFIG_FORM = {
     'model_client_id': {
@@ -58,14 +61,40 @@ def print_cli_header():
         console.print(f"👻  Version: {spoox_version}", style="dim")
     console.print("👻  GitHub: https://github.com/plaume8/spoox", style="dim")
     console.print("")
-    console.print("👻  Spoox CLI is a terminal-integrated, LLM-powered multi-agent system that assists ", style="dim")
-    console.print("👻  with simple OS tasks to software engineering challenges directly in the terminal.", style="dim")
-    console.print("👻  The integrated agent systems are based on the spoox MAS design framework, ", style="dim")
-    console.print("👻  a generic architectural framework for multi-agent topology and communication design.",
-                  style="dim")
+    console.print("👻  Spoox CLI is a terminal-integrated, LLM-powered multi-agent system that assists with tasks", style="dim")
+    console.print("👻  ranging from simple OS operations to complex SE challenges, directly in the terminal.", style="dim")
+    console.print("👻  The integrated agent systems are based on the spoox MAS design framework,", style="dim")
+    console.print("👻  a generic architectural framework for multi-agent topology and communication design.", style="dim")
     console.print("")
     console.rule(characters="—", style="grey30")
     console.print("")
+
+def print_cli_footer(agent_id: str):
+    """Print spoox cli static footer."""
+
+    console.print(f"👻  Agent system '{agent_id}' initialized successfully.", style="dim")
+    console.print("👻  Ready to get to work! Just type in your task, question, or challenge.")
+    console.print("👻  Typical use cases include:", style="dim")
+    console.print("👻  - Analyze the Apache logs and answer the question...", style="dim")
+    console.print("👻  - For my newly created Python script, create a comprehensive test suite ...", style="dim")
+    console.print("👻  - I configured a Node server but it continues to fail. Help me fix it ...", style="dim")
+    console.print("")
+    console.rule(characters="—", style="grey30")
+    console.print("")
+
+
+def start_loading_circle():
+    """Start a loading circle animation in the terminal."""
+    global _spinner
+    _spinner = yaspin(text="Loading...", color="cyan")
+    _spinner.start()
+
+
+def stop_loading_circle():
+    """Stop the loading circle animation."""
+    global _spinner
+    if _spinner:
+        _spinner.stop()
 
 
 async def confirm_cli_config(config: dict, logs_dir: Path, first_call: bool = True) -> dict:
@@ -121,7 +150,7 @@ def load_cached_cli_config(config_cache: Path) -> Optional[dict]:
 
 
 async def fill_cli_config(config: dict, request_all: bool = True) -> dict:
-    """CLI process for filling a spoox configuration."""
+    """CLI process for filling a spoox config."""
 
     # get all user inputs
     console.print("👻  Complete the following steps to config the spoox CLI:", style="dim")

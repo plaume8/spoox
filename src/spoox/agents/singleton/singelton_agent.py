@@ -85,7 +85,7 @@ class SingletonAgent(RoutedAgent):
             self._usage_stats['llm_calls_count'] += 1
 
             # request model client (llm)
-            llm_res, model_client_errors = self._request_llm(ctx, model_client_errors)
+            llm_res, model_client_errors = await self._request_llm(ctx, model_client_errors)
             if llm_res is None:
                 continue
             self._interface.print_logging(str(llm_res), f"logging - {self.id.type} - entire llm_res")

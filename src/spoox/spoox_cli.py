@@ -9,7 +9,8 @@ from dotenv import load_dotenv
 from spoox.environment import LocalEnvironment
 from spoox.interface import CLInterface
 from spoox.utils import setup_model_client, setup_agent_system
-from spoox.utils_cli import CONFIG_FORM, confirm_cli_config, print_cli_header
+from spoox.utils_cli import CONFIG_FORM, confirm_cli_config, print_cli_header, start_loading_circle, \
+    stop_loading_circle, print_cli_footer
 
 """
 example usage:
@@ -70,11 +71,14 @@ def main() -> None:
     config = asyncio.run(confirm_cli_config(config, LOGS_DIR))
 
     # setup and run agent system
+    start_loading_circle()
     load_dotenv()
     model_client = setup_model_client(client_id=config['model_client_id']['value'], model_id=config['model_id']['value'])
     environment = LocalEnvironment()
     interface = CLInterface(logging_active=config['model_client_id']['value'] == 'detailed logging')
     agent = setup_agent_system(config['agent_id']['value'], model_client, environment, interface, logs_dir=LOGS_DIR)
+    stop_loading_circle()
+    print_cli_footer(config['agent_id'])
     try:
         asyncio.run(agent.start())
     except Exception as e:
