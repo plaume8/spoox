@@ -117,7 +117,7 @@ class BaseGroupChatAgent(RoutedAgent):
         )
 
         # additional chat history logging
-        logging_chat_hist = ' -> '.join([f"[{str(h.content)[:50].replace('\n', '')}]" for h in self._chat_history])
+        logging_chat_hist = ' -> '.join([f"[{str(h.content)[:60].replace('\n', '')}]" for h in self._chat_history])
         self._interface.print_logging('[start] -> ' + logging_chat_hist, f"logging - {self.id.type} - chat history")
 
         # run the agent's internal loop;

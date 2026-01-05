@@ -2,6 +2,7 @@ import copy
 import sys
 import questionary
 import yaml
+from rich.text import Text
 
 from yaspin import yaspin
 from importlib.metadata import version, PackageNotFoundError
@@ -72,20 +73,20 @@ def print_cli_header():
 def print_cli_footer(agent_id: str):
     """Print spoox cli static footer."""
 
-    _console.print(f"👻  Agent system '{agent_id}' initialized successfully.", style="dim")
+    _console.print(f"👻  Agent system [orange1]{agent_id}[/orange1] initialized successfully.", style="dim")
     _console.print("👻  Typical use cases include:", style="dim")
     _console.print("👻  - ‘Analyze the Apache logs and answer the question …’", style="dim")
     _console.print("👻  - ‘For my newly created Python script, create a comprehensive test suite …’", style="dim")
     _console.print("👻  - ‘I configured a Node server but it continues to fail. Help me fix it …’", style="dim")
     _console.print("")
     _console.print("👻  Ready to get to work! Just type in your task, question, or challenge.", style="bold")
-    _console.print(f"👻  Type 'q' exit.", style="dim")
+    _console.print(f"👻  Type [orange1]q[/orange1] exit.", style="dim")
 
 
 def start_loading():
     """Start a loading animation in the terminal."""
     global _spinner
-    _spinner = yaspin(text="Loading...", color="blue")
+    _spinner = yaspin(text="Loading...", color="grey")
     _spinner.start()
 
 
