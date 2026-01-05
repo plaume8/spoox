@@ -1,5 +1,6 @@
+from enum import Enum
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
 
 from autogen_core import BaseAgent
 from autogen_core.tools import BaseTool
@@ -13,15 +14,25 @@ from spoox.environment.tools import ShellTool
 from spoox.environment.tools import TerminalTool
 
 
+class ConfirmationMode(Enum):
+    """The level of confirmation the agent will seek from the user before interacting with the environment."""
+
+    STRICT = 'strict'  # Agent seeks user confirmation before each environment interaction.
+    SELF_EVALUATION = 'self_evaluation'  # Agent autonomously decides when confirmation is needed (e.g., `cd` does not require confirmation, while `rm` commands always do).
+    NO_CONFIRMATION = 'no_confirmation'  # Agent never seeks user confirmation. Warning: Use only in isolated or sandboxed environments.
+
+
 class LocalEnvironment(Environment):
     """
     This is a concrete environment implementation providing basic programming tools and access the local computer.
     Also, `get_additional_tool_descriptions` and `get_tools` are configured for each relevant specific spoox agent.
     """
 
-    def __init__(self, work_dir: Optional[Path] = None, user: Optional[str] = None):
+    def __init__(self, confirmation_mode: ConfirmationMode,
+                 work_dir: Optional[Path] = None, user: Optional[str] = None):
         super().__init__()
 
+        self.confirmation_mode = confirmation_mode
         self._code_executor = CodeExecutorLocal(work_dir=work_dir, user=user)
 
         self._shell_tool = ShellTool(self._code_executor)

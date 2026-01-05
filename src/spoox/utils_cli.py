@@ -13,6 +13,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 
+from spoox.environment.local_environment import ConfirmationMode
 from spoox.utils import AgentSystemId, ModelClientId
 
 _console = Console()
@@ -34,7 +35,14 @@ CONFIG_FORM = {
         'type': 'choice',
         'prompt': "Please select an agent system:",
         'choices': [e.value for e in list(AgentSystemId)],
-        'default': 'spoox-m',
+        'default': AgentSystemId.SPOOX_M.value,
+        'value': None,
+    },
+    'confirmation_mode': {
+        'type': 'choice',
+        'prompt': "Please select confirmation mode – [strict]: confirmation before every env interaction – [self_evaluation]: agents autonomously decide when confirmation is needed (e.g., `cd` does not require confirmation, while `rm` commands always do) – [no_confirmation]: agent never seeks user confirmation, warning: use only in isolated or sandboxed environments.",
+        'choices': [e.value for e in list(ConfirmationMode)],
+        'default': ConfirmationMode.SELF_EVALUATION.value,
         'value': None,
     },
     'debugging_mode': {

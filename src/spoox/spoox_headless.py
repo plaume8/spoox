@@ -6,6 +6,7 @@ import nest_asyncio
 from dotenv import load_dotenv
 
 from spoox.environment import LocalEnvironment
+from spoox.environment.local_environment import ConfirmationMode
 from spoox.interface import LogInterface
 from spoox.utils import setup_model_client, setup_agent_system, ModelClientId, AgentSystemId
 
@@ -30,22 +31,19 @@ def main() -> None:
     parser.add_argument(
         "-c",
         "--model-client-id",
-        required=False,
-        default="openai",
-        help="Model client, options: 'ollama', 'openai', 'anthropic'.",
+        required=True,
+        help="Model client, options: 'ollama', 'openai', 'anthropic' (str).",
     )
     parser.add_argument(
         "-m",
         "--model-id",
-        required=False,
-        default="gpt-5-mini",
+        required=True,
         help="Model id (str).",
     )
     parser.add_argument(
         "-a",
         "--agent-id",
-        required=False,
-        default="singleton",
+        required=True,
         help="Agent id (e.g. 'singleton', 'spoox-m') (str)."
     )
     parser.add_argument(
@@ -69,12 +67,20 @@ def main() -> None:
         help="Logs dir path (str).",
     )
     parser.add_argument(
+        "-s",
+        "--confirmation-mode",
+        required=True,
+        help="The level of confirmation the agent will seek from the user before interacting with the environment, "
+             "options: 'strict', 'self_evaluation', 'no_confirmation' (str).",
+    )
+    parser.add_argument(
         "-x",
         "--max-timeout",
         required=False,
         default=3600,  # 60min default max
         help="Max timeout in seconds (int).",
     )
+
 
     args = parser.parse_args()
     client_id = ModelClientId(args.model_client_id)
@@ -84,12 +90,13 @@ def main() -> None:
     task = str(args.task)
     logs_dir = Path(str(args.logs_dir))
     max_timeout = int(args.max_timeout)
+    confirmation_mode = ConfirmationMode(args.confirmation_mode)
 
     load_dotenv()
 
     # setup model client and environment
     model_client = setup_model_client(client_id=client_id, model_id=model_id)
-    environment = LocalEnvironment()
+    environment = LocalEnvironment(confirmation_mode=confirmation_mode)
 
     # setup headless interface -> using log interface
     interface = LogInterface(logging_active=True, print_live=print_reasoning)

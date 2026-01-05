@@ -1,7 +1,6 @@
 import os
 from enum import Enum
 from pathlib import Path
-from typing import Any
 
 from autogen_core.models import ChatCompletionClient
 from autogen_ext.models.anthropic import AnthropicChatCompletionClient

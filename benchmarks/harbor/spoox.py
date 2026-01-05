@@ -55,7 +55,10 @@ class Spoox(BaseInstalledAgent):
         load_dotenv()
         openai_api_key = str(os.environ.get("OPENAI_API_KEY"))
         safe_instruction = shlex.quote(instruction)
-        cmd = f". /opt/venv/bin/activate && spoox-h -c {_MODEL_CLIENT_ID} -m {_MODEL_ID} -a {_AGENT_ID} -l {_DOCKER_LOGS_DIR} -x {_AGENT_MAX_TIMEOUT} -t {safe_instruction}"
+        confirmation_mode = 'confirmation'
+        cmd = (f". /opt/venv/bin/activate && spoox-h "
+               f"-c {_MODEL_CLIENT_ID} -m {_MODEL_ID} -a {_AGENT_ID} -l {_DOCKER_LOGS_DIR} -x {_AGENT_MAX_TIMEOUT} "
+               f"-s {confirmation_mode} -t {safe_instruction}")
         return [ExecInput(command=cmd, env={"OPENAI_API_KEY": openai_api_key})]
 
     def populate_context_post_run(self, context: AgentContext) -> None:
