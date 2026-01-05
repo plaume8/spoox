@@ -2,7 +2,7 @@ import asyncio
 import copy
 import re
 import uuid
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Union
 
 from autogen_core import RoutedAgent, message_handler, MessageContext, DefaultTopicId, FunctionCall
 from autogen_core.models import SystemMessage, LLMMessage, UserMessage, AssistantMessage, \
@@ -116,9 +116,9 @@ class BaseGroupChatAgent(RoutedAgent):
             )
         )
 
-        # logging  # todo simply remove these two lines after final testing
-        logging_chat_hist = '| -> ' + ' -> '.join([str(h.content)[:40].replace('\n', '') for h in self._chat_history])
-        self._interface.print_logging(logging_chat_hist, f"logging - {self.id.type} - chat history")
+        # additional chat history logging
+        logging_chat_hist = ' -> '.join([f"[{str(h.content)[:50].replace('\n', '')}]" for h in self._chat_history])
+        self._interface.print_logging('[start] -> ' + logging_chat_hist, f"logging - {self.id.type} - chat history")
 
         # run the agent's internal loop;
         # if agent loop fails, no final group chat message is generated, and the fallback agent is called if available
@@ -178,7 +178,7 @@ class BaseGroupChatAgent(RoutedAgent):
                 self._interface.print_thought(llm_res.thought, f"{self.id.type} - thoughts")
 
             # check if list of tool calls
-            tool_results_message = self._exec_tools(ctx, llm_res)
+            tool_results_message = await self._exec_tools(ctx, content)
             if tool_results_message is not None:
                 counter_only_text_messages = 0
                 self._chat_history.append(tool_results_message)
@@ -219,22 +219,20 @@ class BaseGroupChatAgent(RoutedAgent):
             )
         except Exception as e:
             self._usage_stats['model_client_exceptions'].append(e)
-            self._interface.print_logging(str(e), "Model Client Error (no retry)")
+            self._interface.print_logging(str(e), "Model Client Error")
             if model_client_errors >= MAX_MODEL_CLIENT_ERRORS_RETRIALS:
                 raise ModelClientError(self.id.type, MAX_MODEL_CLIENT_ERRORS_RETRIALS, e)
             else:
-                self._interface.print_logging(f"{str(e)}", "Model Client Error (retry)")
                 return None, model_client_errors + 1
         # llm call success
         self._usage_stats['prompt_tokens'].append(llm_res.usage.prompt_tokens)
         self._usage_stats['completion_tokens'].append(llm_res.usage.completion_tokens)
         return llm_res, 0
 
-    async def _exec_tools(self, ctx: MessageContext, llm_res: CreateResult) -> Optional[FunctionExecutionResultMessage]:
+    async def _exec_tools(self, ctx: MessageContext, content: Union[str, List[FunctionCall]]) -> Optional[FunctionExecutionResultMessage]:
         """Executes available tool calls, if any."""
 
         # check whether the LLM response contains tool calls
-        content = llm_res.content
         if not isinstance(content, list) or not all(isinstance(c, FunctionCall) for c in content):
             return None
         if self._environment is None:

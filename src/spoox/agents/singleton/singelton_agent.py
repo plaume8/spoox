@@ -129,11 +129,10 @@ class SingletonAgent(RoutedAgent):
             )
         except Exception as e:
             self._usage_stats['model_client_exceptions'].append(e)
-            self._interface.print_logging(str(e), "Model Client Error (no retry)")
+            self._interface.print_logging(str(e), "Model Client Error")
             if model_client_errors >= MAX_MODEL_CLIENT_ERRORS_RETRIALS:
                 raise ModelClientError(self.id.type, MAX_MODEL_CLIENT_ERRORS_RETRIALS, e)
             else:
-                self._interface.print_logging(f"{str(e)}", "Model Client Error (retry)")
                 return None, model_client_errors + 1
         # llm call success
         self._usage_stats['prompt_tokens'].append(llm_res.usage.prompt_tokens)

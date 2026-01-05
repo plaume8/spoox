@@ -12,8 +12,10 @@ class ModelClientError(AgentError):
     """Model client error after maximum retry limit is reached."""
 
     def __init__(self, agent_id: str, max_retrials: int, model_client_exception: Exception):
-        super().__init__(agent_id,
-                         f"Model client exception:\n{model_client_exception} and max reached ({max_retrials})")
+        super().__init__(
+            agent_id,
+            f"Model client exception:\n{str(model_client_exception)} and max reached ({max_retrials})"
+        )
         self.max_retrials = max_retrials
         self.model_client_exception = model_client_exception
 

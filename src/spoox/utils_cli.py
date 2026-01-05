@@ -1,4 +1,5 @@
 import copy
+import sys
 import questionary
 import yaml
 
@@ -14,7 +15,6 @@ from rich.panel import Panel
 
 _console = Console()
 _spinner = None
-_config_process_lines_tracker = 0
 
 CONFIG_FORM = {
     'model_client_id': {
@@ -85,7 +85,7 @@ def print_cli_footer(agent_id: str):
 def start_loading():
     """Start a loading animation in the terminal."""
     global _spinner
-    _spinner = yaspin(text="Loading...", color="cyan")
+    _spinner = yaspin(text="Loading...", color="blue")
     _spinner.start()
 
 
@@ -99,7 +99,9 @@ def stop_loading():
 def clear_lines(num_lines: int):
     """Clear the specified number of lines from the terminal."""
     for _ in range(num_lines):
-        _console.print("\033[F\033[K", end="")  # Move up and clear line
+        sys.stdout.write("\033[F")  # move cursor up
+        sys.stdout.write("\033[K")  # clear line
+    sys.stdout.flush()
 
 
 async def confirm_cli_config(config: dict, logs_dir: Path, cache_config: bool = True) -> dict:
@@ -118,26 +120,27 @@ async def confirm_cli_config(config: dict, logs_dir: Path, cache_config: bool = 
             config = cached_config
 
     # ask user to confirm config
-    _console.print("👻  Final configuration:")
-    md = Markdown(f"```yaml\n{'\n'.join([f"{a}: {f['value']}" for a, f in config.items()])}\n```")
-    _console.print(Panel(md, style='#555555'))
+    print_config(config, "Selected configuration:")
     if not questionary.confirm("Please confirm the config ?", qmark='👻 ').ask():
         config_cache.unlink(missing_ok=True)
         config = await confirm_cli_config(copy.deepcopy(CONFIG_FORM), logs_dir, cache_config=False)
-
 
     if cache_config:
         # cache config
         with config_cache.open("w") as file:
             yaml.dump(config, file)
-        # remove config process and sum up config in one line
-        global _config_process_lines_tracker
-        clear_lines(_config_process_lines_tracker)
-        _config_process_lines_tracker = 0
+        # clear config process from terminal and print summary
         _console.print("")
         _console.rule(characters="—", style="grey30")
         _console.print("")
     return config
+
+
+def print_config(config: dict, title: str) -> None:
+    """Print configuration in terminal."""
+    _console.print(f"👻  {title}")
+    md = Markdown(f"```yaml\n{'\n'.join([f"{a}: {f['value']}" for a, f in config.items()])}\n```")
+    _console.print(Panel(md, style='#555555'))
 
 
 def load_cached_cli_config(config_cache: Path) -> Optional[dict]:
