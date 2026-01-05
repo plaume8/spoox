@@ -18,9 +18,12 @@ def setup_model_client(client_id: str, model_id: str) -> ChatCompletionClient:
     """
     Based on the provided client_id and model_id, the corresponding model client instance is created.
 
-    :param client_id: The base model client, options: 'ollama', 'openai', 'anthropic'.
-    :param model_id: the actual model id (e.g. 'qwen3:8b', 'claude-sonnet-4-5-20250929').
-    :return: Model client ready to be used by the agent system.
+    Args:
+        client_id (str): The base model client, options: 'ollama', 'openai', 'anthropic'.
+        model_id (str): The actual model id (e.g. 'qwen3:8b', 'claude-sonnet-4-5-20250929').
+
+    Returns:
+        ChatCompletionClient: Model client ready to be used by the agent system.
     """
 
     _check_env(client_id)

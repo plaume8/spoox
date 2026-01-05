@@ -20,6 +20,7 @@ class CLIColor(Enum):
 class Interface(ABC):
     """
     Abstract base class that defines a standardized I/O interface.
+    Represents the main interface for the end user.
     Concrete implementations of this interface are compatible with any agent systems.
     """
 

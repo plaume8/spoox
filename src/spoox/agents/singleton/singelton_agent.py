@@ -113,7 +113,7 @@ class SingletonAgent(RoutedAgent):
             # check if tool calls (if it is not string it has to be a list of tool calls)
             assert isinstance(content, list) and all(isinstance(call, FunctionCall) for call in content)
             counter_only_text_messages = 0
-            tool_results_message = self._exec_tools(ctx, content)
+            tool_results_message = await self._exec_tools(ctx, content)
             self._chat_history.append(tool_results_message)
 
         raise MaxIterationsError(self.id.type, self._max_internal_iterations)

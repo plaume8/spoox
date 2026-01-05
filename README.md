@@ -101,7 +101,24 @@ Several parameters can be passed to the command upfront, such as `spoox -c opena
 However, the _spoox CLI_ automatically guides you through any remaining setup after startup and remembers previous selections.
 Simply follow the on-screen prompts to interact with your agent system.
 
+---
 
+### Recommended Path to Explore the Repository
+
+Follow these steps to understand the repository structure and learn how to set up your own _spoox_ agent:
+
+1. **Read the _spoox_ framework chapter** to familiarize yourself with the overall architecture (see linked paper).
+
+2. **Understand the three core components** that every agent system requires:
+   - **Interface**: Review the abstract interface class in `/src/spoox/interface/interface.py` to understand how agents interact with the end user.
+   - **Model Client**: We use AutoGen's model client implementation, which provides a wrapper for the underlying LLM ([learn more](https://microsoft.github.io/autogen/stable//user-guide/core-user-guide/components/model-clients.html)).
+   - **Environment**: Review the abstract environment class in `/src/spoox/environment/environment.py` to see how the environment interface is provided to agent systems.
+
+3. **Study agent system setup** by examining:
+   - The abstract `AgentSystem` class in `/src/spoox/agents/agent_system.py`.
+   - A concrete implementation example, like `SpooxMedium` in `/src/spoox/agents/mas/agent_system_spoox_medium.py`
+
+4. **Explore individual agent implementation**: Agent systems typically consist of multiple agents. The `BaseGroupChatAgent` class (`/src/spoox/agents/base_agent.py`) provides an abstract base that follows _spoox_ framework design patterns, enabling quick setup of concrete agents as demonstrated in `/src/spoox/agents/mas/agents`.
 ---
 
 ### Authors

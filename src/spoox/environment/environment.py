@@ -58,13 +58,17 @@ class Environment(ABC):
     ) -> FunctionExecutionResult:
         """
         This method executes a tool call by finding the matching tool by name, running it with the provided arguments.
-        :param tools: List of all available tools callable by the agent.
-        :param call: FunctionCall to be executed.
-        :param cancellation_token: CancellationToken.
-        :param interface: List of all available tools callable by the agent.
-        :param usage_stats: Dictionary of usage statistics, provided by the agent system.
-        :param caller_name: Agent topic type.
-        :return: Filled FunctionExecutionResult.
+
+        Args:
+            tools (list[Tool]): List of all available tools callable by the agent.
+            call (FunctionCall): FunctionCall to be executed.
+            cancellation_token (CancellationToken): CancellationToken.
+            interface (Interface): List of all available tools callable by the agent.
+            usage_stats (dict): Dictionary of usage statistics, provided by the agent system.
+            caller_name (str): Agent topic type.
+
+        Returns:
+            FunctionExecutionResult: Filled FunctionExecutionResult.
         """
 
         # logging

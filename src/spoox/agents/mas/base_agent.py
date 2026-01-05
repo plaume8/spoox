@@ -41,13 +41,14 @@ class BaseGroupChatAgent(RoutedAgent):
         """
         Base agent class used to build agents following the concepts and design principles of the spoox framework.
 
-        :param description: One-sentence agent description passed to AutoGen's RoutedAgent.
-        :param system_message: System message added as the initial message to the agent's message history.
-        :param agent_system: Agent system associated with the agent, providing access to the environment, model client, and other shared components.
-        :param next_agent_topic_types: List of all possible next agent topic types that the agent is allowed to call.
-        :param max_internal_iterations: Maximum number of internal iterations the agent may perform, corresponding to the maximum number of LLM calls.
-        :param fallback_agent_topic_type: Topic type of the agent to be invoked if this agent fails.
-        :param reset_on_request_to_speak: If True, internal messages are cleared from the chat history each time the agent is called, while group chat messages remain.
+        Args:
+            description (str): One-sentence agent description passed to AutoGen's RoutedAgent.
+            system_message (str): System message added as the initial message to the agent's message history.
+            agent_system (AgentSystem): Agent system associated with the agent, providing access to the environment, model client, and other shared components.
+            next_agent_topic_types (list[str]): List of all possible next agent topic types that the agent is allowed to call.
+            max_internal_iterations (int): Maximum number of internal iterations the agent may perform, corresponding to the maximum number of LLM calls.
+            fallback_agent_topic_type (str): Topic type of the agent to be invoked if this agent fails.
+            reset_on_request_to_speak (bool): If True, internal messages are cleared from the chat history each time the agent is called, while group chat messages remain.
         """
 
         super().__init__(description=description)
