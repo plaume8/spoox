@@ -16,7 +16,8 @@ class Environment(ABC):
     Typically, an agent is equipped with an environment.
     """
 
-    def __init__(self):
+    def __init__(self, interface: Interface):
+        self.interface = interface
         self.tools = []
         self._started = False
         self.additional_tool_descriptions = ""
@@ -52,6 +53,14 @@ class Environment(ABC):
         """
         pass
 
+    @abstractmethod
+    def _check_tool_call_confirmation(self, call: FunctionCall) -> str:
+        """
+        Check if user configuration should be seeked for the given FunctionCall.
+        Returns an empty string if call is confirmed and can be executed, or a rejection message.
+        """
+        pass
+
     async def execute_tool_call(
             self, tools, call: FunctionCall, cancellation_token: CancellationToken, interface: Interface,
             usage_stats: dict, caller_name: str = ""
@@ -63,7 +72,7 @@ class Environment(ABC):
             tools (list[Tool]): List of all available tools callable by the agent.
             call (FunctionCall): FunctionCall to be executed.
             cancellation_token (CancellationToken): CancellationToken.
-            interface (Interface): List of all available tools callable by the agent.
+            interface (Interface): Interface for user-facing logging.
             usage_stats (dict): Dictionary of usage statistics, provided by the agent system.
             caller_name (str): Agent topic type.
 
@@ -87,14 +96,23 @@ class Environment(ABC):
         if tool is None:
             feResult = FunctionExecutionResult(call_id=call.id, content=f"Tool '{tool_name}' is not known.",
                                                is_error=True, name=call.name)
+
         else:
-            # run the tool and capture the result
-            try:
-                result = await tool.run_json(args_parsed, cancellation_token)
-                feResult = FunctionExecutionResult(call_id=call.id, content=tool.return_value_as_string(result),
-                                                   is_error=False, name=tool.name)
-            except Exception as e:
-                feResult = FunctionExecutionResult(call_id=call.id, content=str(e), is_error=True, name=tool.name)
+            # seek user confirmation
+            rejection_message = self._check_tool_call_confirmation(call)
+            if rejection_message != "":
+                feResult = FunctionExecutionResult(call_id=call.id,
+                                                   content=f"Tool call was rejected due to: {rejection_message}.",
+                                                   is_error=True, name=call.name)
+
+            else:
+                # run the tool and capture the result
+                try:
+                    result = await tool.run_json(args_parsed, cancellation_token)
+                    feResult = FunctionExecutionResult(call_id=call.id, content=tool.return_value_as_string(result),
+                                                       is_error=False, name=tool.name)
+                except Exception as e:
+                    feResult = FunctionExecutionResult(call_id=call.id, content=str(e), is_error=True, name=tool.name)
 
         # logging
         interface.print_tool_call(

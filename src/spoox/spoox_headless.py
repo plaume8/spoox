@@ -94,14 +94,14 @@ def main() -> None:
 
     load_dotenv()
 
-    # setup model client and environment
-    model_client = setup_model_client(client_id=client_id, model_id=model_id)
-    environment = LocalEnvironment(confirmation_mode=confirmation_mode)
-
     # setup headless interface -> using log interface
     interface = LogInterface(logging_active=True, print_live=print_reasoning)
     interface.user_delegate.user_input = [task, 'q']
     interface.user_delegate.default_user_choice = 'confirm'
+
+    # setup model client and environment
+    model_client = setup_model_client(client_id, model_id)
+    environment = LocalEnvironment(interface=interface, confirmation_mode=confirmation_mode)
 
     # setup and run agent system
     agent = setup_agent_system(agent_id, model_client, environment, interface, max_timeout, logs_dir)

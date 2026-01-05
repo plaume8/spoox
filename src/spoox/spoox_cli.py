@@ -87,9 +87,10 @@ def main() -> None:
     start_loading()
     load_dotenv()
     try:
-        model_client = setup_model_client(client_id=client_id, model_id=model_id)
-        environment = LocalEnvironment(confirmation_mode=confirmation_mode)
+        model_client = setup_model_client(client_id, model_id)
         interface = CLInterface(logging_active=logging_active)
+        environment = LocalEnvironment(interface=interface, confirmation_mode=confirmation_mode)
+        interface = CLInterface(logging_active)
         agent = setup_agent_system(agent_id, model_client, environment, interface, logs_dir=LOGS_DIR)
     except Exception as e:
         print_error_message(f"Exception during agent system setup:\n {str(e)}")

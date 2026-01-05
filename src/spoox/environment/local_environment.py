@@ -12,6 +12,7 @@ from spoox.environment import Environment
 from spoox.environment.code_executors import CodeExecutorLocal
 from spoox.environment.tools import ShellTool
 from spoox.environment.tools import TerminalTool
+from spoox.interface import Interface
 
 
 class ConfirmationMode(Enum):
@@ -28,9 +29,9 @@ class LocalEnvironment(Environment):
     Also, `get_additional_tool_descriptions` and `get_tools` are configured for each relevant specific spoox agent.
     """
 
-    def __init__(self, confirmation_mode: ConfirmationMode,
+    def __init__(self, interface: Interface, confirmation_mode: ConfirmationMode,
                  work_dir: Optional[Path] = None, user: Optional[str] = None):
-        super().__init__()
+        super().__init__(interface)
 
         self.confirmation_mode = confirmation_mode
         self._code_executor = CodeExecutorLocal(work_dir=work_dir, user=user)
