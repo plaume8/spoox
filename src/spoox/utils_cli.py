@@ -13,6 +13,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 
+from spoox.utils import AgentSystemId, ModelClientId
 
 _console = Console()
 _spinner = None
@@ -21,7 +22,7 @@ CONFIG_FORM = {
     'model_client_id': {
         'type': 'choice',
         'prompt': "Please select a model client:",
-        'choices': ['anthropic', 'ollama', 'openai'],
+        'choices': [e.value for e in list(ModelClientId)],
         'value': None,
     },
     'model_id': {
@@ -32,7 +33,7 @@ CONFIG_FORM = {
     'agent_id': {
         'type': 'choice',
         'prompt': "Please select an agent system:",
-        'choices': ['singleton', 'spoox-s', 'spoox-m', 'spoox-l'],
+        'choices': [e.value for e in list(AgentSystemId)],
         'default': 'spoox-m',
         'value': None,
     },

@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 from spoox.environment import LocalEnvironment
 from spoox.interface import LogInterface
-from spoox.utils import setup_model_client, setup_agent_system
+from spoox.utils import setup_model_client, setup_agent_system, ModelClientId, AgentSystemId
 
 nest_asyncio.apply()
 
@@ -77,9 +77,9 @@ def main() -> None:
     )
 
     args = parser.parse_args()
-    client_id = str(args.model_client_id)
+    client_id = ModelClientId(args.model_client_id)
     model_id = str(args.model_id)
-    agent_id = str(args.agent_id)
+    agent_id = AgentSystemId(args.agent_id)
     print_reasoning = str(args.print_reasoning).lower() in ("yes", "true", "t", "y")
     task = str(args.task)
     logs_dir = Path(str(args.logs_dir))

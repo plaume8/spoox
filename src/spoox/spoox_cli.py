@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 from spoox.environment import LocalEnvironment
 from spoox.interface import CLInterface
-from spoox.utils import setup_model_client, setup_agent_system
+from spoox.utils import setup_model_client, setup_agent_system, ModelClientId, AgentSystemId
 from spoox.utils_cli import CONFIG_FORM, confirm_cli_config, print_cli_header, start_loading, stop_loading, print_cli_footer, print_error_message
 
 """
@@ -59,21 +59,27 @@ def main() -> None:
     # fill config
     args = parser.parse_args()
     config = copy.deepcopy(CONFIG_FORM)
-    config['model_client_id']['value'] = str(args.model_client_id) if args.model_client_id else None
+    config['model_client_id']['value'] = ModelClientId(args.model_client_id) if args.model_client_id else None
     config['model_id']['value'] = str(args.model_id) if args.model_id else None
-    config['agent_id']['value'] = str(args.agent_id) if args.agent_id else None
+    config['agent_id']['value'] = AgentSystemId(args.agent_id) if args.agent_id else None
     if args.logging is not None:
         config['debugging_mode']['value'] = 'yes' if str(args.logging.lower()) in ("yes", "true", "t", "y") else 'no'
     config = asyncio.run(confirm_cli_config(config, LOGS_DIR))
+
+    # extract required params from config
+    client_id = ModelClientId(config['model_client_id']['value'])
+    model_id = config['model_id']['value']
+    agent_id = AgentSystemId(config['agent_id']['value'])
+    logging_active = config['debugging_mode']['value'] == 'yes'
 
     # setup agent system
     start_loading()
     load_dotenv()
     try:
-        model_client = setup_model_client(client_id=config['model_client_id']['value'], model_id=config['model_id']['value'])
+        model_client = setup_model_client(client_id=client_id, model_id=model_id)
         environment = LocalEnvironment()
-        interface = CLInterface(logging_active=config['debugging_mode']['value'] == 'yes')
-        agent = setup_agent_system(config['agent_id']['value'], model_client, environment, interface, logs_dir=LOGS_DIR)
+        interface = CLInterface(logging_active=logging_active)
+        agent = setup_agent_system(agent_id, model_client, environment, interface, logs_dir=LOGS_DIR)
     except Exception as e:
         print_error_message(f"Exception during agent system setup:\n {str(e)}")
         return
