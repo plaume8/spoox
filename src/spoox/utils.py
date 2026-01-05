@@ -23,6 +23,8 @@ def setup_model_client(client_id: str, model_id: str) -> ChatCompletionClient:
     :return: Model client ready to be used by the agent system.
     """
 
+    _check_env(client_id)
+
     if client_id == 'ollama':
         # get ollama endpoint
         host = os.environ['OLLAMA']
@@ -46,6 +48,16 @@ def setup_model_client(client_id: str, model_id: str) -> ChatCompletionClient:
         return AnthropicChatCompletionClient(model=model_id)
 
     raise ValueError(f"No model client could be set up for: '{client_id}', '{model_id}'.")
+
+
+def _check_env(client_id: str) -> None:
+    """Check if the environment is set up correctly for given model client id."""
+    if client_id == 'ollama' and "OLLAMA" not in os.environ:
+        raise ValueError(f"Required environment variable 'OLLAMA' is not set.")
+    elif client_id == 'openai' and "OPENAI_API_KEY" not in os.environ:
+        raise ValueError(f"Required environment variable 'OPENAI_API_KEY' is not set.")
+    elif client_id == 'anthropic' and "'ANTHROPIC_API_KEY'" not in os.environ:
+        raise ValueError(f"Required environment variable 'ANTHROPIC_API_KEY' is not set.")
 
 
 def setup_agent_system(agent_system_id: str, model_client: ChatCompletionClient,

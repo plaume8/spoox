@@ -1,8 +1,8 @@
 import copy
+import os
 import sys
 import questionary
 import yaml
-from rich.text import Text
 
 from yaspin import yaspin
 from importlib.metadata import version, PackageNotFoundError
@@ -83,10 +83,16 @@ def print_cli_footer(agent_id: str):
     _console.print(f"👻  Type [orange1]q[/orange1] exit.", style="dim")
 
 
+def print_error_message(message: str):
+    _console.print("")
+    _console.print(f"👻  {message}", style="bold red")
+    _console.print("")
+
+
 def start_loading():
     """Start a loading animation in the terminal."""
     global _spinner
-    _spinner = yaspin(text="Loading...", color="grey")
+    _spinner = yaspin(text="Loading...", color="blue")
     _spinner.start()
 
 
