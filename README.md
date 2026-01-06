@@ -18,6 +18,8 @@ for the gpt-5-mini model and is therefore used as the default configuration for 
 
 > **Note:** The corresponding paper defining the _spoox_ MAS design heuristics will be published soon and linked here.
 
+![til](./_others/spoox_demo.gif/)
+
 ---
 
 ### Key Features
@@ -119,6 +121,7 @@ Follow these steps to understand the repository structure and learn how to set u
    - A concrete implementation example, like `SpooxMedium` in `/src/spoox/agents/mas/agent_system_spoox_medium.py`
 
 4. **Explore individual agent implementation**: Agent systems typically consist of multiple agents. The `BaseGroupChatAgent` class (`/src/spoox/agents/base_agent.py`) provides an abstract base that follows _spoox_ framework design patterns, enabling quick setup of concrete agents as demonstrated in `/src/spoox/agents/mas/agents`.
+
 ---
 
 ### Authors

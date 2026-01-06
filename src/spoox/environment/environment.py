@@ -71,6 +71,7 @@ class Environment(ABC):
         Args:
             tools (list[Tool]): List of all available tools callable by the agent.
             call (FunctionCall): FunctionCall to be executed.
+            call (FunctionCall): FunctionCall to be executed.
             cancellation_token (CancellationToken): CancellationToken.
             interface (Interface): Interface for user-facing logging.
             usage_stats (dict): Dictionary of usage statistics, provided by the agent system.
@@ -102,7 +103,7 @@ class Environment(ABC):
             rejection_message = self._check_tool_call_confirmation(call)
             if rejection_message != "":
                 feResult = FunctionExecutionResult(call_id=call.id,
-                                                   content=f"Tool call was rejected due to: {rejection_message}.",
+                                                   content=f"Tool call was rejected due to: (UserMessage) {rejection_message}.",
                                                    is_error=True, name=call.name)
 
             else:
