@@ -69,7 +69,7 @@ class LogInterface(Interface):
             self.console.print(panel)
         self.logs.append((f"{title}", out_text, color.value))
 
-    def request_user_input(self, query: str, allow_empty_input: bool = False) -> str:
+    def request_user_input(self, query: str, default: str = "", allow_empty_input: bool = False) -> str:
         """
         Requests arbitrary text input from the user.
         The next queued user input is taken from the user_delegate.

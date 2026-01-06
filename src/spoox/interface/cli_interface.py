@@ -25,22 +25,18 @@ class CLInterface(Interface):
         panel = Panel(md, title=title, style=color.value)
         self.console.print(panel)
 
-    def request_user_input(self, query: str, allow_empty_input: bool = False) -> str:
+    def request_user_input(self, query: str, default: str = "", allow_empty_input: bool = False) -> str:
         """Requests arbitrary text input from the user."""
         self.console.print("")
-        self.console.rule(characters="—", style="grey30")
-        self.console.print("")
         if allow_empty_input:
-            user_input = questionary.text(query, qmark='👻 ').ask()
+            user_input = questionary.text(query, qmark='👻 ', default=default).ask()
         else:
-            user_input = questionary.text(query, qmark='👻 ', validate=lambda s: bool(s)).ask()
+            user_input = questionary.text(query, qmark='👻 ', default=default, validate=lambda s: bool(s)).ask()
         self.console.print("")
         return user_input
 
     def request_select_choice(self, question: str, choices: list[str]) -> str:
         """Requests the user to select one item from choices."""
-        self.console.print("")
-        self.console.rule(characters="—", style="grey30")
         self.console.print("")
         user_choice = questionary.select(question, choices, qmark='👻 ').ask()
         self.console.print("")

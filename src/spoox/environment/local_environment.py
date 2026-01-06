@@ -2,7 +2,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional, Any
 
-from autogen_core import BaseAgent
+from autogen_core import BaseAgent, FunctionCall
 from autogen_core.tools import BaseTool
 from autogen_ext.tools.code_execution import PythonCodeExecutionTool
 from autogen_ext.tools.langchain import LangChainToolAdapter
@@ -96,3 +96,83 @@ class LocalEnvironment(Environment):
             return [shell_descr, py_descr, terminal_descr]
         # default: return no additional tool descriptions (e.g. Approver, Summarizer, ...)
         return []
+
+    def _check_tool_call_confirmation(self, call: FunctionCall) -> str:
+        """
+        Check if user configuration should be seeked for the given FunctionCall.
+        Returns an empty string if call is confirmed and can be executed, or a rejection message.
+        For the LocalEnvironment this is dependent on the selected confirmation_mode.
+        """
+        restricted_tool_names = ["shell", "python", "terminal", "codeexecutor"]
+        confirmation_choices = ['confirm', 'reject']
+
+        # NO confirmation required
+        if call.name.lower() not in restricted_tool_names:
+            return ""
+        if self.confirmation_mode == ConfirmationMode.NO_CONFIRMATION:
+            return ""
+
+        # confirmation required
+        user_choice = 'reject'
+        if self.confirmation_mode == ConfirmationMode.STRICT:
+            user_choice = self.interface.request_select_choice(
+                f"Please confirm whether to proceed with the latest {call.name} tool call:",
+                confirmation_choices
+            )
+        elif self.confirmation_mode == ConfirmationMode.SELF_EVALUATION:
+            if self._risk_in_code_execution(call.arguments):
+                user_choice = self.interface.request_select_choice(
+                    f"Please confirm whether to proceed with the latest {call.name} tool call:",
+                    confirmation_choices
+                )
+            else:
+                user_choice = 'confirm'
+        if user_choice == 'reject':
+            return self.interface.request_user_input(
+                "Please explain why you chose to reject this tool call:",
+                default="Command poses a potential security risk."
+            )
+        return ""
+
+    def _risk_in_code_execution(self, code: str) -> bool:
+        """
+        Risk assessment if code snippet can be executed without user confirmation.
+        Returns true if risk detected and user confirmation is required.
+        """
+        # todo better LLM implementation (already added to git issues)
+        if any(r in code for r in self.RISK_KEYWORDS):
+            return True
+        return False
+
+    RISK_KEYWORDS = [
+        # --- File system / destructive ---
+        "rm ", "rm -", "rm -rf", "unlink", "shutil.rmtree",
+        "os.remove", "os.unlink", "os.rmdir",
+        "shred", "dd if=", "mkfs", "wipefs",
+        # --- Process / execution ---
+        "exec(", "eval(", "compile(",
+        "subprocess.", "os.system", "os.popen",
+        "Popen(", "call(", "run(",
+        "bash -c", "sh -c",
+        # --- Privilege escalation ---
+        "sudo", "su ", "setuid", "setgid",
+        # --- Networking / remote code ---
+        "curl ", "wget ", "ftp ", "scp ", "rsync ",
+        "requests.get", "requests.post",
+        "socket.", "paramiko",
+        # --- Persistence / system modification ---
+        "crontab", "/etc/passwd", "/etc/shadow",
+        "systemctl", "service ",
+        "chkconfig",
+        "~/.bashrc", "~/.profile",
+        # --- Disk / hardware ---
+        "/dev/sd", "/dev/nvme", "mount ", "umount ",
+        # --- Containers / virtualization ---
+        "docker run", "docker exec", "docker rm",
+        "kubectl", "helm ",
+        # --- Environment manipulation ---
+        "export ", "unset ",
+        "os.environ",
+        # --- Potential fork bombs / abuse ---
+        ":(){", "fork(", "multiprocessing"
+    ]

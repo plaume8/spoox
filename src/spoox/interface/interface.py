@@ -52,7 +52,7 @@ class Interface(ABC):
             self.print(out_text, title, CLIColor.DARKGREY)
 
     @abstractmethod
-    def request_user_input(self, query: str, allow_empty_input: bool = False) -> str:
+    def request_user_input(self, query: str, default: str = "", allow_empty_input: bool = False) -> str:
         """Requests arbitrary text input from the user."""
         pass
 
