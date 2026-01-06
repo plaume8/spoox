@@ -16,7 +16,9 @@ for the gpt-5-mini model and is therefore used as the default configuration for 
 
 <br>
 
-> **Note:** The corresponding paper defining the _spoox_ MAS design heuristics will be published soon and linked here.
+> **Note:** The corresponding paper defining the spoox MAS design heuristics 
+> and the associated scaling behavior studies will be published soon and linked here.
+
 
 <br>
 
