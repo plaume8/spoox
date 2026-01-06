@@ -33,7 +33,6 @@ class AgentSystemId(Enum):
     SPOOX_L = 'spoox-l'
 
 
-
 def setup_model_client(client_id: ModelClientId, model_id: str) -> ChatCompletionClient:
     """
     Based on the provided client_id and model_id, the corresponding model client instance is created.

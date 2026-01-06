@@ -12,7 +12,6 @@ from spoox.utils import setup_model_client, setup_agent_system, ModelClientId, A
 
 nest_asyncio.apply()
 
-
 """
 example usage:
 python src/spoox/spoox_headless.py -c openai -m gpt-5-mini -a spoox-m -t "create an empty file named dodo in the current dir"
@@ -80,7 +79,6 @@ def main() -> None:
         default=3600,  # 60min default max
         help="Max timeout in seconds (int).",
     )
-
 
     args = parser.parse_args()
     client_id = ModelClientId(args.model_client_id)
