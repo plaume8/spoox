@@ -1,8 +1,6 @@
 
 <img src="_others/spoox_transparent_icon_512x512.png" width="40" />
 
-<br>
-
 # SPOOX
 
 **SPOOX – SPlit lOOp eXpand**
@@ -16,13 +14,15 @@ Several differently scaled terminal MAS variants have been developed and are acc
 The spoox-m variant achieved first place on the [Terminal Bench leaderboard](https://www.tbench.ai/leaderboard/terminal-bench/2.0?models=GPT-5-Mini) 
 for the gpt-5-mini model and is therefore used as the default configuration for the _spoox CLI_.
 
+<br>
+
 > **Note:** The corresponding paper defining the _spoox_ MAS design heuristics will be published soon and linked here.
+
+<br>
 
 ![til](./_others/spoox_demo.gif/)
 
----
-
-### Key Features
+## Key Features
 
 #### Terminal-Native Design
 
@@ -45,9 +45,9 @@ All main components are designed for reuse and implementing custom multi-agent s
 - `AgentSystem`: Quick MAS configuration by combining multiple `BaseGroupChatAgent` instances.
 - `Environment` and `Interface`: Choose from existing implementations or define custom ones.
 
----
+<br>
 
-### Installation
+## Installation
 
 #### Prerequisites
 
@@ -59,16 +59,16 @@ All main components are designed for reuse and implementing custom multi-agent s
 pip install spoox
 ```
 
----
+<br>
 
-### Getting Started
+## Getting Started
 
-#### 1. Configure Model Client
+### 1. Configure Model Client
 
 _Spoox CLI_ supports three model clients: **OpenAI**, **Anthropic**, and **Ollama**. 
 Configure the appropriate client before running _spoox CLI_.
 
-#### Ollama
+##### Ollama
 
 Set the `OLLAMA` environment variable to the Ollama server URL. Typically, Ollama runs locally on port 11434:
 ```shell
@@ -78,21 +78,21 @@ export OLLAMA=http://localhost:11434
 **Docker users:** If _spoox CLI_ runs in a Docker container but Ollama runs on the host machine, 
 use `export OLLAMA=http://host.docker.internal:11434`.
 
-#### Anthropic
+##### Anthropic
 
 Set your API key as an environment variable:
 ```sh
 export ANTHROPIC_API_KEY=<api_key>
 ```
 
-#### OpenAI
+##### OpenAI
 
 Set your API key as an environment variable:
 ```sh
 export OPENAI_API_KEY=<api_key>
 ```
 
-#### Start spoox CLI
+### 2. Start spoox CLI
 
 Start the CLI by simply running: 
 ```shell
@@ -103,9 +103,9 @@ Several parameters can be passed to the command upfront, such as `spoox -c opena
 However, the _spoox CLI_ automatically guides you through any remaining setup after startup and remembers previous selections.
 Simply follow the on-screen prompts to interact with your agent system.
 
----
+<br>
 
-### Recommended Path to Explore the Repository
+## Recommended Path to Explore the Repository
 
 Follow these steps to understand the repository structure and learn how to set up your own _spoox_ agent:
 
@@ -122,9 +122,9 @@ Follow these steps to understand the repository structure and learn how to set u
 
 4. **Explore individual agent implementation**: Agent systems typically consist of multiple agents. The `BaseGroupChatAgent` class (`/src/spoox/agents/base_agent.py`) provides an abstract base that follows _spoox_ framework design patterns, enabling quick setup of concrete agents as demonstrated in `/src/spoox/agents/mas/agents`.
 
----
+<br>
 
-### Authors
+## Authors
 
 [Linus Sander](mailto:linus.sander@tum.de),
 [Fengjunjie Pan](mailto:f.pan@tum.de),
