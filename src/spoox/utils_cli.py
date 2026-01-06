@@ -1,5 +1,4 @@
 import copy
-import os
 import sys
 import questionary
 import yaml
@@ -70,10 +69,13 @@ def print_cli_header():
         _console.print(f"👻  Version: {spoox_version}", style="dim")
     _console.print("👻  GitHub: https://github.com/plaume8/spoox", style="dim")
     _console.print("")
-    _console.print("👻  Spoox CLI is a terminal-integrated, LLM-powered multi-agent system that assists with tasks", style="dim")
-    _console.print("👻  ranging from simple OS operations to complex SE challenges, directly in the terminal.", style="dim")
+    _console.print("👻  Spoox CLI is a terminal-integrated, LLM-powered multi-agent system that assists with tasks",
+                   style="dim")
+    _console.print("👻  ranging from simple OS operations to complex SE challenges, directly in the terminal.",
+                   style="dim")
     _console.print("👻  The integrated agent systems are based on the spoox MAS design framework,", style="dim")
-    _console.print("👻  a generic architectural framework for multi-agent topology and communication design.", style="dim")
+    _console.print("👻  a generic architectural framework for multi-agent topology and communication design.",
+                   style="dim")
     _console.print("")
     _console.rule(characters="—", style="grey30")
     _console.print("")
