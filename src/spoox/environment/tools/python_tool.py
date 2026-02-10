@@ -38,7 +38,7 @@ class CodeExecutionInput(BaseModel):
 class CodeExecutionResult(BaseModel):
     """Result object for PythonTool."""
 
-    output: str = 20
+    output: str = ""
     exit_code: Optional[int] = None
 
     @model_serializer
