@@ -1,16 +1,15 @@
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Any
+from typing import Optional
 
 from autogen_core import BaseAgent, FunctionCall
 from autogen_core.tools import BaseTool
-from autogen_ext.tools.code_execution import PythonCodeExecutionTool
 from autogen_ext.tools.langchain import LangChainToolAdapter
 from langchain_community.tools import DuckDuckGoSearchResults
 
 from spoox.environment import Environment
 from spoox.environment.code_executors import CodeExecutorLocal
-from spoox.environment.tools import ShellTool
+from spoox.environment.tools import ShellTool, PythonTool
 from spoox.environment.tools import TerminalTool
 from spoox.interface import Interface
 
@@ -38,7 +37,7 @@ class LocalEnvironment(Environment):
 
         self._shell_tool = ShellTool(self._code_executor)
         self._terminal_tool = TerminalTool()
-        self._python_tool = PythonCodeExecutionTool(self._code_executor)
+        self._python_tool = PythonTool(self._code_executor)
         self._search_tool = LangChainToolAdapter(DuckDuckGoSearchResults(output_format="list"))
 
     async def start(self):
