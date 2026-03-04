@@ -1,10 +1,14 @@
 import os
 from enum import Enum
+from typing import Sequence, Optional
 
-from autogen_core.models import ChatCompletionClient, ModelInfo, ModelFamily
+from autogen_core import CancellationToken
+from autogen_core.models import ChatCompletionClient, ModelInfo, ModelFamily, LLMMessage, CreateResult
+from autogen_core.tools import Tool, ToolSchema
 from autogen_ext.models.anthropic import AnthropicChatCompletionClient
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from autogen_ext.models.ollama import OllamaChatCompletionClient
+from openai import OpenAI
 
 
 class ModelClientId(Enum):
@@ -64,6 +68,73 @@ def setup_model_client(client_id: ModelClientId, model_id: str) -> ChatCompletio
     raise ValueError(f"No model client could be set up for: '{client_id}', '{model_id}'.")
 
 
+
+class CustomOpenAIResponseAPIClient:
+
+    def __init__(self, model_id: str):
+
+        self._client = OpenAI()
+        self._model_id = model_id
+
+    def request(self, message: str):
+
+        response = self._client.responses.create(
+            model=self._model_id,
+            input=message
+        )
+        print(response)
+
+    def create(
+        self,
+        messages: Sequence[LLMMessage],
+        tools: Sequence[Tool | ToolSchema] = [],
+        cancellation_token: Optional[CancellationToken] = None
+    ) -> CreateResult:
+
+        # parse messages
+        history = list()
+        for m in messages:
+            if m.type == 'UserMessage':
+                history.append({
+                    "role": "user",
+                    "content": m.content
+                })
+                # todo source arg
+                assert (type(m.content) == str)
+            if m.type == 'SystemMessage':
+                history.append({
+                    "role": "system",
+                    "content": m.content
+                })
+            if m.type == 'AssistantMessage':
+                history.append({
+                    "role": "assistant",
+                    "content": m.content
+                })
+                # todo source arg
+                # todo function call
+                # todo thought
+
+            if m.type == 'FunctionExecutionResultMessage':
+                # todo
+
+        # request model
+        history.append({})
+        response = self._client.responses.create(
+            model=self._model_id,
+            input=history
+        )
+
+        # parse response
+
+
+if __name__ == '__main__':
+    model_client = CustomOpenAIResponseAPIClient(model_id="gpt-5-mini")
+
+    model_client.request("What is your name")
+
+
+
 def _check_env(client_id: ModelClientId) -> None:
     """Check if the environment is set up correctly for given model client id."""
     if client_id == ModelClientId.OLLAMA and "OLLAMA" not in os.environ:
@@ -72,3 +143,4 @@ def _check_env(client_id: ModelClientId) -> None:
         raise ValueError(f"Required environment variable 'OPENAI_API_KEY' is not set.")
     elif client_id == ModelClientId.ANTHROPIC and "'ANTHROPIC_API_KEY'" not in os.environ:
         raise ValueError(f"Required environment variable 'ANTHROPIC_API_KEY' is not set.")
+
