@@ -11,7 +11,10 @@ from autogen_ext.models.anthropic import AnthropicChatCompletionClient
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from autogen_ext.models.ollama import OllamaChatCompletionClient
 from openai import OpenAI
-from openai.types.responses import FunctionToolParam
+from openai.types.responses import FunctionToolParam, ResponseOutputText, ResponseFunctionToolCall
+from openai.types.responses.response_input_item import FunctionCallOutput
+from openai.types.responses.response_input_param import Message
+from openai.types.responses.response_reasoning_item import Content
 
 
 class ModelClientId(Enum):
@@ -71,7 +74,6 @@ def setup_model_client(client_id: ModelClientId, model_id: str) -> ChatCompletio
     raise ValueError(f"No model client could be set up for: '{client_id}', '{model_id}'.")
 
 
-
 class CustomOpenAIResponseAPIClient:
 
     def __init__(self, model_id: str):
@@ -88,40 +90,60 @@ class CustomOpenAIResponseAPIClient:
         print(response)
 
     def create(
-        self,
-        messages: Sequence[LLMMessage],
-        agent_id_type: str,
-        tools: Sequence[Tool | ToolSchema] = [],
-        cancellation_token: Optional[CancellationToken] = None,
+            self,
+            messages: Sequence[LLMMessage],
+            agent_id_type: str,
+            tools: Sequence[Tool | ToolSchema] = [],
+            cancellation_token: Optional[CancellationToken] = None,
     ) -> CreateResult:
 
         # parse messages
         parsed_messages = list()
         for m in messages:
             if m.type == 'UserMessage':
-                parsed_messages.append({
-                    "role": "user",
-                    "content": m.content
-                })
-                # todo source arg (maybe)
                 assert (type(m.content) == str)
+                parsed_messages.append(
+                    Message(
+                        role="user",
+                        content=m.content,
+                    )
+                )
+                # todo source arg (maybe)
             if m.type == 'SystemMessage':
-                parsed_messages.append({
-                    "role": "system",
-                    "content": m.content
-                })
+                parsed_messages.append(
+                    Message(
+                        role="system",
+                        content=m.content,
+                    )
+                )
             if m.type == 'AssistantMessage':
-                parsed_messages.append({
-                    "role": "assistant",
-                    "content": m.content
-                })
-                # todo source arg
-                # todo function call
-                # todo thought
-
+                if m.thought is not None:
+                    parsed_messages.append({
+                        "role": "assistant",
+                        "content": [Content(text=m.thought)]
+                    })
+                if type(m.content) == "str":
+                    parsed_messages.append({
+                        "role": "assistant",
+                        "content": [ResponseOutputText(annotations=[], text=m.content)]
+                    })
+                else:  # function calls
+                    for function_call in m.content:
+                        parsed_messages.append(
+                            ResponseFunctionToolCall(
+                                arguments=function_call.arguments,
+                                call_id=function_call.id,
+                                name=function_call.name,
+                            )
+                        )
             if m.type == 'FunctionExecutionResultMessage':
-                pass
-                # todo
+                for f in m.content:
+                    parsed_messages.append(
+                        FunctionCallOutput(
+                            type="function_call_output",
+                            call_id=f.call_id,
+                            output=f.content,
+                        ))
 
         # parse tools
         parsed_tools = list()
@@ -181,13 +203,6 @@ class CustomOpenAIResponseAPIClient:
         )
 
 
-if __name__ == '__main__':
-    model_client = CustomOpenAIResponseAPIClient(model_id="gpt-5-mini")
-
-    model_client.request("What is your name")
-
-
-
 def _check_env(client_id: ModelClientId) -> None:
     """Check if the environment is set up correctly for given model client id."""
     if client_id == ModelClientId.OLLAMA and "OLLAMA" not in os.environ:
@@ -196,4 +211,3 @@ def _check_env(client_id: ModelClientId) -> None:
         raise ValueError(f"Required environment variable 'OPENAI_API_KEY' is not set.")
     elif client_id == ModelClientId.ANTHROPIC and "'ANTHROPIC_API_KEY'" not in os.environ:
         raise ValueError(f"Required environment variable 'ANTHROPIC_API_KEY' is not set.")
-
