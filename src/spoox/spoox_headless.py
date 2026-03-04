@@ -8,7 +8,8 @@ from dotenv import load_dotenv
 from spoox.environment import LocalEnvironment
 from spoox.environment.local_environment import ConfirmationMode
 from spoox.interface import LogInterface
-from spoox.utils import setup_model_client, setup_agent_system, ModelClientId, AgentSystemId
+from spoox.environment.model_clients.utils import setup_model_client, ModelClientId
+from spoox.utils import setup_agent_system, AgentSystemId
 
 nest_asyncio.apply()
 
