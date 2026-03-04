@@ -48,9 +48,8 @@ def setup_model_client(client_id: ModelClientId, model_id: str) -> ChatCompletio
         return OllamaChatCompletionClient(model=model_id, host=host)
 
     if client_id == ModelClientId.OPENAI:
-        if 'gpt-5' in model_id:
-            return CustomOpenAIResponseAPIClient(model_id=model_id)
-        return OpenAIChatCompletionClient(model=model_id)
+        return CustomOpenAIResponseAPIClient(model_id=model_id)
+        #return OpenAIChatCompletionClient(model=model_id)
 
     if client_id == ModelClientId.ANTHROPIC:
         return AnthropicChatCompletionClient(model=model_id)
