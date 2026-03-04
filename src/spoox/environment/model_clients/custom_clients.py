@@ -5,10 +5,9 @@ from autogen_core.models import LLMMessage, CreateResult, \
     RequestUsage
 from autogen_core.tools import Tool, ToolSchema
 from openai import OpenAI
-from openai.types.responses import FunctionToolParam, ResponseOutputText, ResponseFunctionToolCall
+from openai.types.responses import FunctionToolParam, ResponseFunctionToolCall
 from openai.types.responses.response_input_item import FunctionCallOutput
 from openai.types.responses.response_input_param import Message
-from openai.types.responses.response_reasoning_item import Content
 
 
 class CustomOpenAIResponseAPIClient:
@@ -27,7 +26,13 @@ class CustomOpenAIResponseAPIClient:
             completion_tokens=self.completion_tokens
         )
 
-    def create(
+    def total_usage(self) -> RequestUsage:
+        return RequestUsage(
+            prompt_tokens=self.prompt_tokens,
+            completion_tokens=self.completion_tokens
+        )
+
+    async def create(
             self,
             messages: Sequence[LLMMessage],
             tools: Sequence[Tool | ToolSchema] = [],
@@ -38,7 +43,7 @@ class CustomOpenAIResponseAPIClient:
         parsed_messages = list()
         for m in messages:
             if m.type == 'UserMessage':
-                assert (type(m.content) == str)
+                assert (isinstance(m.content, str))
                 parsed_messages.append(
                     Message(
                         role="user",
@@ -57,17 +62,18 @@ class CustomOpenAIResponseAPIClient:
                 if m.thought is not None:
                     parsed_messages.append({
                         "role": "assistant",
-                        "content": [Content(text=m.thought)]
+                        "content": m.thought
                     })
-                if type(m.content) == "str":
+                if isinstance(m.content, str):
                     parsed_messages.append({
                         "role": "assistant",
-                        "content": [ResponseOutputText(annotations=[], text=m.content)]
+                        "content": m.content
                     })
                 else:  # function calls
                     for function_call in m.content:
                         parsed_messages.append(
                             ResponseFunctionToolCall(
+                                type="function_call",
                                 arguments=function_call.arguments,
                                 call_id=function_call.id,
                                 name=function_call.name,
@@ -112,7 +118,7 @@ class CustomOpenAIResponseAPIClient:
         thoughts: list[str] = list()
         for item in response.output:
             if item.type == "message":
-                output_texts.extend(i.text for i in item.content if i.type == "output_text")
+                output_texts.extend(i.text for i in item.content or [] if i.type == "output_text")
             if item.type == "reasoning":
                 thoughts.extend(i.text for i in item.content or [])
             if item.type == "function_call":
