@@ -1,20 +1,12 @@
-import copy
 import os
 from enum import Enum
-from typing import Sequence, Optional
 
-from autogen_core import CancellationToken, FunctionCall
-from autogen_core.models import ChatCompletionClient, ModelInfo, ModelFamily, LLMMessage, CreateResult, \
-    AssistantMessage, RequestUsage
-from autogen_core.tools import Tool, ToolSchema
+from autogen_core.models import ChatCompletionClient
 from autogen_ext.models.anthropic import AnthropicChatCompletionClient
-from autogen_ext.models.openai import OpenAIChatCompletionClient
 from autogen_ext.models.ollama import OllamaChatCompletionClient
-from openai import OpenAI
-from openai.types.responses import FunctionToolParam, ResponseOutputText, ResponseFunctionToolCall
-from openai.types.responses.response_input_item import FunctionCallOutput
-from openai.types.responses.response_input_param import Message
-from openai.types.responses.response_reasoning_item import Content
+from autogen_ext.models.openai import OpenAIChatCompletionClient
+
+from spoox.environment.model_clients.custom_clients import CustomOpenAIResponseAPIClient
 
 
 class ModelClientId(Enum):
@@ -25,7 +17,7 @@ class ModelClientId(Enum):
     OPENAI = 'openai'
 
 
-def setup_model_client(client_id: ModelClientId, model_id: str) -> ChatCompletionClient:
+def setup_model_client(client_id: ModelClientId, model_id: str) -> ChatCompletionClient | CustomOpenAIResponseAPIClient:
     """
     Based on the provided client_id and model_id, the corresponding model client instance is created.
 
@@ -57,150 +49,13 @@ def setup_model_client(client_id: ModelClientId, model_id: str) -> ChatCompletio
 
     if client_id == ModelClientId.OPENAI:
         if model_id == "gpt-5.3-codex":
-            model_info: ModelInfo = {
-                "vision": True,
-                "function_calling": True,
-                "json_output": True,
-                "family": ModelFamily.GPT_5,
-                "structured_output": True,
-                "multiple_system_messages": True,
-            }
-            return OpenAIChatCompletionClient(model=model_id, model_info=model_info)
+            return CustomOpenAIResponseAPIClient(model_id=model_id)
         return OpenAIChatCompletionClient(model=model_id)
 
     if client_id == ModelClientId.ANTHROPIC:
         return AnthropicChatCompletionClient(model=model_id)
 
     raise ValueError(f"No model client could be set up for: '{client_id}', '{model_id}'.")
-
-
-class CustomOpenAIResponseAPIClient:
-
-    def __init__(self, model_id: str):
-
-        self._client = OpenAI()
-        self._model_id = model_id
-
-    def request(self, message: str):
-
-        response = self._client.responses.create(
-            model=self._model_id,
-            input=message
-        )
-        print(response)
-
-    def create(
-            self,
-            messages: Sequence[LLMMessage],
-            agent_id_type: str,
-            tools: Sequence[Tool | ToolSchema] = [],
-            cancellation_token: Optional[CancellationToken] = None,
-    ) -> CreateResult:
-
-        # parse messages
-        parsed_messages = list()
-        for m in messages:
-            if m.type == 'UserMessage':
-                assert (type(m.content) == str)
-                parsed_messages.append(
-                    Message(
-                        role="user",
-                        content=m.content,
-                    )
-                )
-                # todo source arg (maybe)
-            if m.type == 'SystemMessage':
-                parsed_messages.append(
-                    Message(
-                        role="system",
-                        content=m.content,
-                    )
-                )
-            if m.type == 'AssistantMessage':
-                if m.thought is not None:
-                    parsed_messages.append({
-                        "role": "assistant",
-                        "content": [Content(text=m.thought)]
-                    })
-                if type(m.content) == "str":
-                    parsed_messages.append({
-                        "role": "assistant",
-                        "content": [ResponseOutputText(annotations=[], text=m.content)]
-                    })
-                else:  # function calls
-                    for function_call in m.content:
-                        parsed_messages.append(
-                            ResponseFunctionToolCall(
-                                arguments=function_call.arguments,
-                                call_id=function_call.id,
-                                name=function_call.name,
-                            )
-                        )
-            if m.type == 'FunctionExecutionResultMessage':
-                for f in m.content:
-                    parsed_messages.append(
-                        FunctionCallOutput(
-                            type="function_call_output",
-                            call_id=f.call_id,
-                            output=f.content,
-                        ))
-
-        # parse tools
-        parsed_tools = list()
-        for t in tools:
-            t_schema = t.schema
-            tool: FunctionToolParam = {
-                "type": "function",
-                "name": t_schema["name"],
-                "description": t_schema["description"],
-                "parameters": t_schema["parameters"],
-                "strict": t_schema["strict"],
-            }
-            parsed_tools.append(tool)
-
-        # request model
-        response = self._client.responses.create(
-            model=self._model_id,
-            input=parsed_messages,
-            tools=parsed_tools
-        )
-
-        # parse response
-        func_calls: list[FunctionCall] = list()
-        output_texts: list[str] = list()
-        thoughts: list[str] = list()
-        for item in response.output:
-            if item.type == "message":
-                output_texts.extend(i.text for i in item.content if i.type == "output_text")
-            if item.type == "reasoning":
-                thoughts.extend(i.text for i in item.content or [])
-            if item.type == "function_call":
-                func_calls.append(FunctionCall(
-                    id=item.call_id,
-                    arguments=item.arguments,
-                    name=item.name,
-                ))
-        if len(func_calls) > 0:
-            return CreateResult(
-                finish_reason="stop",
-                content=func_calls,
-                usage=RequestUsage(
-                    prompt_tokens=response.usage.input_tokens,
-                    completion_tokens=response.usage.output_tokens,
-                ),
-                cached=False,
-                thought='; '.join(output_texts + thoughts)
-            )
-        return CreateResult(
-            finish_reason="stop",
-            content='; '.join(output_texts),
-            usage=RequestUsage(
-                prompt_tokens=response.usage.input_tokens,
-                completion_tokens=response.usage.output_tokens,
-            ),
-            cached=False,
-            thought='; '.join(thoughts)
-        )
 
 
 def _check_env(client_id: ModelClientId) -> None:

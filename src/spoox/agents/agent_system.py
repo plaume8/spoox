@@ -9,6 +9,7 @@ from pathlib import Path
 from autogen_core import SingleThreadedAgentRuntime
 from autogen_core.models import ChatCompletionClient
 from spoox.environment import Environment
+from spoox.environment.model_clients.custom_clients import CustomOpenAIResponseAPIClient
 from spoox.interface import Interface
 
 
@@ -26,7 +27,7 @@ class AgentSystem(ABC):
     - `get_state()` simple function returning the most important objects within a dictionary that should be logged and could be useful for post-analysis.
     """
 
-    def __init__(self, interface: Interface, model_client: ChatCompletionClient,
+    def __init__(self, interface: Interface, model_client: ChatCompletionClient | CustomOpenAIResponseAPIClient,
                  environment: Environment, timeout: int = 600, logs_dir: Path = Path.cwd()):
 
         self.interface = interface

@@ -8,6 +8,7 @@ from spoox.agents.agent_system import AgentSystem
 from spoox.agents.singleton.messages import PublicMessage
 from spoox.agents.singleton.singelton_agent import SingletonAgent
 from spoox.environment import Environment
+from spoox.environment.model_clients.custom_clients import CustomOpenAIResponseAPIClient
 from spoox.interface import Interface
 
 
@@ -20,7 +21,7 @@ class SingletonAgentSystem(AgentSystem):
 
     singleton_topic_type = "singleton"
 
-    def __init__(self, interface: Interface, model_client: ChatCompletionClient,
+    def __init__(self, interface: Interface, model_client: ChatCompletionClient | CustomOpenAIResponseAPIClient,
                  environment: Environment, timeout: int = 600, logs_dir: Path = Path.cwd()):
 
         super().__init__(interface, model_client, environment, timeout, logs_dir)

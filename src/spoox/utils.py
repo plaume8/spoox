@@ -10,6 +10,7 @@ from spoox.agents import SpooxLarge
 from spoox.agents import SpooxMedium
 from spoox.agents import SpooxSmall
 from spoox.environment import Environment
+from spoox.environment.model_clients.custom_clients import CustomOpenAIResponseAPIClient
 from spoox.interface import Interface
 
 
@@ -22,9 +23,12 @@ class AgentSystemId(Enum):
     SPOOX_L = 'spoox-l'
 
 
-def setup_agent_system(agent_system_id: AgentSystemId, model_client: ChatCompletionClient,
-                       environment: Environment, interface: Interface,
-                       timeout: int = 600, logs_dir: Path = Path.cwd()) -> AgentSystem:
+def setup_agent_system(agent_system_id: AgentSystemId,
+                       model_client: ChatCompletionClient | CustomOpenAIResponseAPIClient,
+                       environment: Environment,
+                       interface: Interface,
+                       timeout: int = 600,
+                       logs_dir: Path = Path.cwd()) -> AgentSystem:
     """Based on the provided 'agent_id', create the corresponding agent system instance."""
 
     if agent_system_id == AgentSystemId.SINGLETON:

@@ -14,6 +14,7 @@ from spoox.agents.mas.agents import SolverAgent
 from spoox.agents.mas.agents import SummarizerAgent
 from spoox.agents.mas.agents import TesterAgent
 from spoox.environment import Environment
+from spoox.environment.model_clients.custom_clients import CustomOpenAIResponseAPIClient
 from spoox.interface import Interface
 
 
@@ -31,7 +32,7 @@ class SpooxMedium(AgentSystem):
     approver_topic_type = "approver"
     summarizer_topic_type = "summarizer"
 
-    def __init__(self, interface: Interface, model_client: ChatCompletionClient,
+    def __init__(self, interface: Interface, model_client: ChatCompletionClient | CustomOpenAIResponseAPIClient,
                  environment: Environment, timeout: int = 600, logs_dir: Path = Path.cwd()):
         super().__init__(interface, model_client, environment, timeout, logs_dir)
         # agents
