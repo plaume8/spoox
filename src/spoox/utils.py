@@ -2,7 +2,7 @@ import os
 from enum import Enum
 from pathlib import Path
 
-from autogen_core.models import ChatCompletionClient
+from autogen_core.models import ChatCompletionClient, ModelInfo, ModelFamily
 from autogen_ext.models.anthropic import AnthropicChatCompletionClient
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from autogen_ext.models.ollama import OllamaChatCompletionClient
@@ -64,6 +64,16 @@ def setup_model_client(client_id: ModelClientId, model_id: str) -> ChatCompletio
         return OllamaChatCompletionClient(model=model_id, host=host)
 
     if client_id == ModelClientId.OPENAI:
+        if model_id == "gpt-5.3-codex":
+            model_info: ModelInfo = {
+                "vision": True,
+                "function_calling": True,
+                "json_output": True,
+                "family": ModelFamily.GPT_5,
+                "structured_output": True,
+                "multiple_system_messages": True,
+            }
+            return OpenAIChatCompletionClient(model=model_id, model_info=model_info)
         return OpenAIChatCompletionClient(model=model_id)
 
     if client_id == ModelClientId.ANTHROPIC:
