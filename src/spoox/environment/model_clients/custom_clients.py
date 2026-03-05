@@ -1,13 +1,10 @@
 from typing import Sequence, Optional
 
 from autogen_core import CancellationToken, FunctionCall
-from autogen_core.models import LLMMessage, CreateResult, \
-    RequestUsage
+from autogen_core.models import LLMMessage, CreateResult, RequestUsage
 from autogen_core.tools import Tool, ToolSchema
 from openai import OpenAI
-from openai.types.responses import FunctionToolParam, ResponseFunctionToolCall, ResponseInputTextParam
-from openai.types.responses.response_input_item import FunctionCallOutput
-from openai.types.responses.response_input_param import Message
+from openai.types.responses import FunctionToolParam
 
 
 class CustomOpenAIResponseAPIClient:
@@ -42,15 +39,15 @@ class CustomOpenAIResponseAPIClient:
         # parse messages
         parsed_messages = list()
         for m in messages:
+
             if m.type == 'UserMessage':
                 parsed_messages.append({
                     "role": "user",
                     "content": m.content,
                 })
-                # todo source arg (maybe)
             elif m.type == 'SystemMessage':
                 parsed_messages.append({
-                    "role": "system",
+                    "role": "developer",
                     "content": m.content,
                 })
             elif m.type == 'AssistantMessage':
@@ -66,22 +63,19 @@ class CustomOpenAIResponseAPIClient:
                     })
                 else:  # function calls
                     for function_call in m.content:
-                        parsed_messages.append(
-                            ResponseFunctionToolCall(
-                                type="function_call",
-                                arguments=function_call.arguments,
-                                call_id=function_call.id,
-                                name=function_call.name,
-                            )
-                        )
+                        parsed_messages.append({
+                            "type": "function_call",
+                            "arguments": function_call.arguments,
+                            "call_id": function_call.id,
+                            "name": function_call.name,
+                        })
             elif m.type == 'FunctionExecutionResultMessage':
                 for f in m.content:
-                    parsed_messages.append(
-                        FunctionCallOutput(
-                            type="function_call_output",
-                            call_id=f.call_id,
-                            output=f.content,
-                        ))
+                    parsed_messages.append({
+                        "type": "function_call_output",
+                        "call_id": f.call_id,
+                        "output": f.content,
+                    })
             else:
                 raise ValueError(f"Unexpected message type: {m.type}")
 
@@ -94,7 +88,7 @@ class CustomOpenAIResponseAPIClient:
                 "name": t_schema["name"],
                 "description": t_schema["description"],
                 "parameters": t_schema["parameters"],
-                "strict": t_schema["strict"],
+                "strict": t_schema.get("strict", True),
             }
             parsed_tools.append(tool)
 
@@ -102,7 +96,9 @@ class CustomOpenAIResponseAPIClient:
         response = self._client.responses.create(
             model=self._model_id,
             input=parsed_messages,
-            tools=parsed_tools
+            tools=parsed_tools,
+            store=False,
+            reasoning={"effort": "medium"},
         )
 
         # parse token usage
@@ -111,8 +107,8 @@ class CustomOpenAIResponseAPIClient:
         if response.usage is not None:
             prompt_tokens += response.usage.input_tokens
             completion_tokens += response.usage.output_tokens
-        self.prompt_tokens = prompt_tokens
-        self.completion_tokens = completion_tokens
+        self.prompt_tokens += prompt_tokens
+        self.completion_tokens += completion_tokens
 
         # parse response
         func_calls: list[FunctionCall] = list()
@@ -141,15 +137,15 @@ class CustomOpenAIResponseAPIClient:
                     completion_tokens=completion_tokens,
                 ),
                 cached=False,
-                thought='; '.join(output_texts + thoughts)
+                thought='; \n\n'.join(output_texts + thoughts)
             )
         return CreateResult(
             finish_reason="stop",
-            content='; '.join(output_texts),
+            content='; \n\n'.join(output_texts),
             usage=RequestUsage(
                 prompt_tokens=prompt_tokens,
                 completion_tokens=completion_tokens,
             ),
             cached=False,
-            thought='; '.join(thoughts)
+            thought='; \n\n'.join(thoughts)
         )

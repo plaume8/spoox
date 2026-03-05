@@ -5,8 +5,7 @@ import uuid
 from typing import List, Tuple, Optional, Union
 
 from autogen_core import RoutedAgent, message_handler, MessageContext, DefaultTopicId, FunctionCall
-from autogen_core.models import SystemMessage, LLMMessage, UserMessage, AssistantMessage, \
-    FunctionExecutionResultMessage, CreateResult
+from autogen_core.models import SystemMessage, LLMMessage, AssistantMessage, FunctionExecutionResultMessage, CreateResult
 
 from spoox.agents.agent_system import AgentSystem
 from spoox.agents.errors import ModelClientError, MaxOnlyTextMessagesError, MaxIterationsError, AgentError
@@ -85,7 +84,7 @@ class BaseGroupChatAgent(RoutedAgent):
         so that only group chat messages are retained and all internal iteration messages are discarded.
         """
         new_messages = [
-            UserMessage(content=f"Transferred to {message.body.source.capitalize()} agent.", source="system"),
+            SystemMessage(content=f"Transferred to {message.body.source.capitalize()} agent."),
             message.body,
         ]
         self._chat_history_group_chat_only.extend(new_messages)
@@ -111,10 +110,7 @@ class BaseGroupChatAgent(RoutedAgent):
 
         # add a system message that instructs the model to adopt this agent's persona
         self._chat_history.append(
-            UserMessage(
-                content=f"Transferred to {self.id.type.capitalize()} agent, adopt the persona immediately.",
-                source="system"
-            )
+            SystemMessage(content=f"Transferred to {self.id.type.capitalize()} agent, adopt the persona immediately.")
         )
 
         # additional chat history logging
@@ -269,7 +265,7 @@ class BaseGroupChatAgent(RoutedAgent):
         await self.publish_message(
             message=GroupChatMessage(
                 nonce=str(uuid.uuid4()),
-                body=UserMessage(content=message, source=self.id.type)
+                body=AssistantMessage(content=message, source=self.id.type),
             ),
             topic_id=DefaultTopicId(type=GROUP_CHAT_TOPIC_TYPE),
         )

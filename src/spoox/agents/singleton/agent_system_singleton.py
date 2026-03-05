@@ -42,7 +42,7 @@ class SingletonAgentSystem(AgentSystem):
         """Triggers the execution flow of the agent system's single agents, given the latest user input."""
 
         await self.runtime.publish_message(
-            message=PublicMessage(body=UserMessage(content=user_input, source="User")),
+            message=PublicMessage(body=UserMessage(content=user_input, source="user")),
             topic_id=DefaultTopicId(type=self.singleton_topic_type),
         )
 

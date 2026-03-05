@@ -1,6 +1,5 @@
 from anthropic import BaseModel
-from autogen_core.models import UserMessage
-
+from autogen_core.models import UserMessage, AssistantMessage
 
 # generic topic type used for group chat messages.
 GROUP_CHAT_TOPIC_TYPE = "groupchat"
@@ -12,7 +11,7 @@ GROUP_CHAT_TOPIC_TYPE = "groupchat"
 class GroupChatMessage(BaseModel):
     """Text message for a group chat. Typically distributed to all agents."""
     nonce: str
-    body: UserMessage
+    body: UserMessage | AssistantMessage
 
 
 class RequestToSpeak(BaseModel):

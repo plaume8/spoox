@@ -159,7 +159,7 @@ class SpooxLarge(AgentSystem):
         """Triggers the execution flow of the agent system's single agents, given the latest user input."""
 
         await self.runtime.publish_message(
-            message=GroupChatMessage(nonce=str(uuid.uuid4()), body=UserMessage(content=user_input, source="User")),
+            message=GroupChatMessage(nonce=str(uuid.uuid4()), body=UserMessage(content=user_input, source="user")),
             topic_id=DefaultTopicId(type=GROUP_CHAT_TOPIC_TYPE)
         )
         # 0.1 delay to ensure the GroupChatMessage can be observed before the RequestToSpeak
