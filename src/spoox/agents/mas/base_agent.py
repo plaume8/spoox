@@ -205,6 +205,14 @@ class BaseGroupChatAgent(RoutedAgent):
             # check if MAX_ONLY_TEXT_MESSAGES is reached
             counter_only_text_messages += 1
             if counter_only_text_messages > MAX_ONLY_TEXT_MESSAGES:
+                if counter_only_text_messages == 2:
+                    # additional reminder after 2 only_text_messages
+                    tags = ', '.join([f"[{f}]" for f in self._next_agent_topic_types])
+                    self._chat_history.append(SystemMessage(
+                        content=f"Remember: do not ask the user for feedback or confirmation. "
+                                f"Do your work as best as possible. When you believe your task is complete, "
+                                f"call the appropriate next agent using one of the predefined tags (available tags: {tags})"
+                    ))
                 raise MaxOnlyTextMessagesError(self.id.type, MAX_ONLY_TEXT_MESSAGES)
 
         raise MaxIterationsError(self.id.type, self._max_internal_iterations)
