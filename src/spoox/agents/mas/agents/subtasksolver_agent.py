@@ -25,6 +25,5 @@ class SubTaskSolverAgent(BaseGroupChatAgent):
             system_message=system_message,
             agent_system=agent_system,
             next_agent_topic_types=[planner_agent_topic_type],
-            max_internal_iterations=100,
-            reset_on_request_to_speak=True,
+            max_internal_iterations=100
         )

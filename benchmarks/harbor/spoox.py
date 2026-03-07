@@ -20,7 +20,7 @@ class ExecInput(BaseModel):
 _AGENT_ID = "spoox-m"  # "singleton",'spoox-s','spoox-m','spoox-l'
 _AGENT_ID_CHAR = "m"  # "singleton",'s','m','l'
 _MODEL_CLIENT_ID = "openai"  # "ollama", "openai", "anthropic"
-_MODEL_ID = "gpt-5-mini"  # "gpt-oss:20b","qwen3:14b","claude-sonnet-4-5","magistral:24b","gpt-5","gpt-5-mini","gpt-5-nano"
+_MODEL_ID = "gpt-5.3-codex"  # "gpt-oss:20b","qwen3:14b","claude-sonnet-4-5","magistral:24b","gpt-5","gpt-5-mini","gpt-5-nano"
 
 # harbor automatically copies the /logs/agent directory to local Harbor logs;
 # as a result, spoox logs are automatically copied as well.

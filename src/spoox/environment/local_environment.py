@@ -69,7 +69,7 @@ class LocalEnvironment(Environment):
             return [self._shell_tool, self._search_tool, self._terminal_tool]
         elif class_name in ["SolverAgent", "SubTaskSolverAgent", "RefinerAgent"]:
             return [self._shell_tool, self._python_tool, self._terminal_tool, self._search_tool]
-        elif class_name in ["TesterAgent"]:
+        elif class_name in ["TesterAgent", "ApproverAgent"]:
             return [self._shell_tool, self._python_tool, self._terminal_tool]
         # default: return no tools (e.g. Approver, Summarizer, ...)
         return []
@@ -91,7 +91,7 @@ class LocalEnvironment(Environment):
             return [shell_descr, terminal_descr]
         elif class_name in ["SolverAgent", "SubTaskSolverAgent", "RefinerAgent"]:
             return [shell_descr, py_descr, terminal_descr]
-        elif class_name in ["TesterAgent"]:
+        elif class_name in ["TesterAgent", "ApproverAgent"]:
             return [shell_descr, py_descr, terminal_descr]
         # default: return no additional tool descriptions (e.g. Approver, Summarizer, ...)
         return []

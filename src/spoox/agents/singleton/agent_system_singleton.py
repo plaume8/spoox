@@ -8,7 +8,7 @@ from spoox.agents.agent_system import AgentSystem
 from spoox.agents.singleton.messages import PublicMessage
 from spoox.agents.singleton.singelton_agent import SingletonAgent
 from spoox.environment import Environment
-from spoox.environment.model_clients.custom_clients import CustomOpenAIResponseAPIClient
+from spoox.environment.model_clients.custom_client_openai import CustomOpenAIResponseAPIClient
 from spoox.interface import Interface
 
 

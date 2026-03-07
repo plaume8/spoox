@@ -36,6 +36,7 @@ class BaseGroupChatAgent(RoutedAgent):
             max_internal_iterations: int = 50,
             fallback_agent_topic_type: str = None,
             reset_on_request_to_speak: bool = False,  # todo should be True ?
+            only_track_user_messages: bool = False,
     ) -> None:
         """
         Base agent class used to build agents following the concepts and design principles of the spoox framework.
@@ -48,6 +49,7 @@ class BaseGroupChatAgent(RoutedAgent):
             max_internal_iterations (int): Maximum number of internal iterations the agent may perform, corresponding to the maximum number of LLM calls.
             fallback_agent_topic_type (str): Topic type of the agent to be invoked if this agent fails.
             reset_on_request_to_speak (bool): If True, internal messages are cleared from the chat history each time the agent is called, while group chat messages remain.
+            only_track_user_messages (bool): If True, the agent's group chat history only keeps track of user messages.
         """
 
         super().__init__(description=description)
@@ -55,6 +57,7 @@ class BaseGroupChatAgent(RoutedAgent):
         self._max_internal_iterations = max_internal_iterations
         self._fallback_agent_topic_type = fallback_agent_topic_type
         self._reset_on_request_to_speak = reset_on_request_to_speak
+        self._only_track_user_messages = only_track_user_messages
 
         self._environment = agent_system.environment
         self._model_client = agent_system.model_client
@@ -83,6 +86,8 @@ class BaseGroupChatAgent(RoutedAgent):
         the chat history is simply replaced with `_chat_history_group_chat_only`,
         so that only group chat messages are retained and all internal iteration messages are discarded.
         """
+        if self._only_track_user_messages and message.body.source.lower() != 'user':
+            return
         new_messages = [
             SystemMessage(content=f"Transferred to {message.body.source.capitalize()} agent."),
             message.body,

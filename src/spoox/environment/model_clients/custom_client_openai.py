@@ -8,6 +8,7 @@ from openai.types.responses import FunctionToolParam
 
 
 class CustomOpenAIResponseAPIClient:
+    # todo cleanup
 
     def __init__(self, model_id: str):
 

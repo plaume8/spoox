@@ -6,7 +6,7 @@ from autogen_ext.models.anthropic import AnthropicChatCompletionClient
 from autogen_ext.models.ollama import OllamaChatCompletionClient
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 
-from spoox.environment.model_clients.custom_clients import CustomOpenAIResponseAPIClient
+from spoox.environment.model_clients.custom_client_openai import CustomOpenAIResponseAPIClient
 
 
 class ModelClientId(Enum):
@@ -48,8 +48,9 @@ def setup_model_client(client_id: ModelClientId, model_id: str) -> ChatCompletio
         return OllamaChatCompletionClient(model=model_id, host=host)
 
     if client_id == ModelClientId.OPENAI:
-        return CustomOpenAIResponseAPIClient(model_id=model_id)
-        #return OpenAIChatCompletionClient(model=model_id)
+        if 'codex' in model_id:
+            return CustomOpenAIResponseAPIClient(model_id=model_id)
+        return OpenAIChatCompletionClient(model=model_id)
 
     if client_id == ModelClientId.ANTHROPIC:
         return AnthropicChatCompletionClient(model=model_id)

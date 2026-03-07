@@ -140,23 +140,23 @@ def get_REFINER_SYSTEM_MESSAGE(agent_role: str, tester_agent_topic_type: str,
     )
 
 
-def get_APPROVER_SYSTEM_MESSAGE(agent_role: str, solver_agent_topic_type: str,
-                                test_agent_topic_type: str, next_agent_topic_type: str) -> str:
+def get_APPROVER_SYSTEM_MESSAGE(agent_role: str, solver_agent_topic_type: str, next_agent_topic_type: str,
+                                additional_tool_descriptions: [str]) -> str:
     _TASK_DESCR = [
         f"""""",
         f"""## Task Description""",
         f"""- Your role is the "{agent_role.capitalize()}" agent of the Multi Agent System.""",
-        f"""- Your job is to determine if the agents have done enough work on the task.""",
-        f"""- Make your decision based on all information gathered and the actions performed by previous agents.""",
-        f"""- Be critical and selective, approve only what you are completely sure of.""",
+        f"""- The task has already been completed by earlier agents. Your responsibility is now to evaluate and test the implemented solution.""",
+        f"""- Ensure that all specifications are implemented precisely as described in the user's initial request.""",
+        f"""- Be critical and selective, and only approve the solution if all requirements are fully and precisely satisfied.""",
         f"""- If you decide that the task was **not solved successfully**, briefly explain why and include the tag '[{solver_agent_topic_type}]'.""",
-        f"""- If you decide that **not enough testing** was done to ensure the task is fully and successfully completed, briefly explain why and add the tag '[{test_agent_topic_type}]'.""",
-        f"""- If you decide that **sufficient work** was done, just reply briefly with the tag '[{next_agent_topic_type}]'.""",
-        f"""- Make one of the three decisions and include its tag in your response.""",
+        f"""- If the entire task is solved successfully write a summary of what you did and include the tag '[{next_agent_topic_type}]'.""",
     ]
     return '\n'.join(
         MAS_CONTEXT +
-        _TASK_DESCR
+        _TASK_DESCR +
+        get_CODE_EXECUTION_CAPABILITIES(additional_tool_descriptions) +
+        MORE_OPERATING_RULES
     )
 
 

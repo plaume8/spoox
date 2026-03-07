@@ -1,4 +1,3 @@
-import os
 from enum import Enum
 from pathlib import Path
 
@@ -10,7 +9,7 @@ from spoox.agents import SpooxLarge
 from spoox.agents import SpooxMedium
 from spoox.agents import SpooxSmall
 from spoox.environment import Environment
-from spoox.environment.model_clients.custom_clients import CustomOpenAIResponseAPIClient
+from spoox.environment.model_clients.custom_client_openai import CustomOpenAIResponseAPIClient
 from spoox.interface import Interface
 
 

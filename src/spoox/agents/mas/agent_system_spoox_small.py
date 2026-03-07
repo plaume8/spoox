@@ -12,7 +12,7 @@ from spoox.agents.mas.agents import SolverAgent
 from spoox.agents.mas.agents import SummarizerAgent
 from spoox.agents.mas.agents import TesterAgent
 from spoox.environment import Environment
-from spoox.environment.model_clients.custom_clients import CustomOpenAIResponseAPIClient
+from spoox.environment.model_clients.custom_client_openai import CustomOpenAIResponseAPIClient
 from spoox.interface import Interface
 
 

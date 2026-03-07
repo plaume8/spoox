@@ -14,7 +14,7 @@ from spoox.agents.mas.agents import SolverAgent
 from spoox.agents.mas.agents import SummarizerAgent
 from spoox.agents.mas.agents import TesterAgent
 from spoox.environment import Environment
-from spoox.environment.model_clients.custom_clients import CustomOpenAIResponseAPIClient
+from spoox.environment.model_clients.custom_client_openai import CustomOpenAIResponseAPIClient
 from spoox.interface import Interface
 
 
@@ -95,7 +95,6 @@ class SpooxMedium(AgentSystem):
                 topic_type=self.approver_topic_type,
                 agent_system=self,
                 solver_agent_topic_type=self.solver_topic_type,
-                test_agent_topic_type=self.tester_topic_type,
                 next_agent_topic_type=self.summarizer_topic_type,
             ),
         )
