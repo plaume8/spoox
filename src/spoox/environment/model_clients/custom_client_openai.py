@@ -99,7 +99,7 @@ class CustomOpenAIResponseAPIClient:
             input=parsed_messages,
             tools=parsed_tools,
             store=False,
-            reasoning={"effort": "medium"},
+            reasoning={"effort": "high"}
         )
 
         # parse token usage

@@ -1,7 +1,7 @@
 import os
 from enum import Enum
 
-from autogen_core.models import ChatCompletionClient
+from autogen_core.models import ChatCompletionClient, ModelFamily
 from autogen_ext.models.anthropic import AnthropicChatCompletionClient
 from autogen_ext.models.ollama import OllamaChatCompletionClient
 from autogen_ext.models.openai import OpenAIChatCompletionClient
@@ -50,6 +50,16 @@ def setup_model_client(client_id: ModelClientId, model_id: str) -> ChatCompletio
     if client_id == ModelClientId.OPENAI:
         if 'codex' in model_id:
             return CustomOpenAIResponseAPIClient(model_id=model_id)
+        if '5.4' in model_id:
+            model_info = {
+                "vision": True,
+                "function_calling": True,
+                "json_output": True,
+                "family": ModelFamily.GPT_5,
+                "structured_output": True,
+                "multiple_system_messages": True
+            }
+            return OpenAIChatCompletionClient(model=model_id, model_info=model_info)
         return OpenAIChatCompletionClient(model=model_id)
 
     if client_id == ModelClientId.ANTHROPIC:

@@ -35,7 +35,7 @@ class BaseGroupChatAgent(RoutedAgent):
             next_agent_topic_types: list[str] = None,
             max_internal_iterations: int = 50,
             fallback_agent_topic_type: str = None,
-            reset_on_request_to_speak: bool = False,  # todo should be True ?
+            reset_on_request_to_speak: bool = True,
             only_track_user_messages: bool = False,
     ) -> None:
         """
