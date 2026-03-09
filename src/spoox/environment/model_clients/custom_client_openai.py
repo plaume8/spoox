@@ -84,10 +84,6 @@ class CustomOpenAIResponseAPIClient:
             else:
                 raise ValueError(f"Unexpected message type: {m.type}")
 
-        for m in parsed_messages:
-            print(m)
-
-
         # parse tools
         parsed_tools = list()
         for t in tools:
@@ -106,7 +102,9 @@ class CustomOpenAIResponseAPIClient:
             model=self._model_id,
             input=parsed_messages,
             tools=parsed_tools,
-            reasoning={"effort": "high"}
+            reasoning={"effort": "high"},
+            store=True,
+            max_output_tokens=100000,
         )
 
         # parse token usage
@@ -119,8 +117,6 @@ class CustomOpenAIResponseAPIClient:
         self.completion_tokens += completion_tokens
 
         # parse response
-        for f in response.output:
-            print(f)
         func_calls: list[FunctionCall] = list()
         output_texts: list[str] = list()
         thoughts: list[str] = list()

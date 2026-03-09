@@ -12,8 +12,6 @@ ln -sf /usr/bin/python3 /usr/bin/python
 ln -sf /usr/local/bin/pip3.12 /usr/bin/pip3
 ln -sf /usr/bin/pip3 /usr/bin/pip
 
-python3 -m venv /opt/venv
-. /opt/venv/bin/activate
 pip install spoox
 
 python --version

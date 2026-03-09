@@ -57,7 +57,7 @@ class Spoox(BaseInstalledAgent):
         openai_api_key = str(os.environ.get("OPENAI_API_KEY"))
         safe_instruction = shlex.quote(instruction)
         confirmation_mode = 'no_confirmation'
-        cmd = (f". /opt/venv/bin/activate && spoox-h "
+        cmd = (f"spoox-h "
                f"-c {_MODEL_CLIENT_ID} -m {_MODEL_ID} -a {_AGENT_ID} -l {_DOCKER_LOGS_DIR} -x {_AGENT_MAX_TIMEOUT} "
                f"-s {confirmation_mode} -t {safe_instruction}")
         return [ExecInput(command=cmd, env={"OPENAI_API_KEY": openai_api_key})]
