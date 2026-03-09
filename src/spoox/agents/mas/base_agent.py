@@ -11,7 +11,7 @@ from spoox.agents.agent_system import AgentSystem
 from spoox.agents.errors import ModelClientError, MaxOnlyTextMessagesError, MaxIterationsError, AgentError
 from spoox.agents.mas.agents.prompts import get_AGENT_FAILED_GROUP_CHAT_MESSAGE
 from spoox.agents.mas.messages import GroupChatMessage, RequestToSpeak, GROUP_CHAT_TOPIC_TYPE
-
+from spoox.environment.model_clients.custom_response_types import CreateResultOpenAI, AssistantMessageOpenAI
 
 # to ensure progress and prevent endless text-only replies, a limit on consecutive text-only messages is enforced
 MAX_ONLY_TEXT_MESSAGES = 3
@@ -178,8 +178,13 @@ class BaseGroupChatAgent(RoutedAgent):
             content = llm_res.content
 
             # add the response to session and print thoughts if available
-            self._chat_history.append(
-                AssistantMessage(content=content, thought=llm_res.thought, source=self.id.type))
+            if isinstance(llm_res, CreateResultOpenAI):
+                self._chat_history.append(
+                    AssistantMessageOpenAI(content=content, thought=llm_res.thought,
+                                           source=self.id.type, response_items=llm_res.response_items))
+            else:
+                self._chat_history.append(
+                    AssistantMessage(content=content, thought=llm_res.thought, source=self.id.type))
             if llm_res.thought:
                 self._interface.print_thought(llm_res.thought, f"{self.id.type} - thoughts")
 
@@ -267,8 +272,8 @@ class BaseGroupChatAgent(RoutedAgent):
         """Checks if the message includes an agent tag and returns the first match detected."""
 
         for nt in self._next_agent_topic_types:
-            patter = rf"\[[^\]]*{re.escape(nt)}[^\]]*\]"
-            if re.search(patter, message, flags=re.IGNORECASE):
+            pattern = rf"\[[^\]]*{re.escape(nt)}[^\]]*\]"
+            if re.search(pattern, message, flags=re.IGNORECASE):
                 self._usage_stats['next_agent_calling_chain'].append(nt)
                 return nt
         return None
@@ -289,6 +294,9 @@ class BaseGroupChatAgent(RoutedAgent):
         )
 
     async def _send_group_chat_message_and_request_to_speak(self, message: str, agent_type: str):
+        # remove tag from message
+        pattern = rf"\[[^\]]*{re.escape(agent_type)}[^\]]*\]"
+        message = re.sub(pattern, "", message)
         await self._send_group_chat_message(message)
         # 0.1 delay to ensure the GroupChatMessage can be observed before the RequestToSpeak
         # (I think it is not required, however, it certainly does not hurt)

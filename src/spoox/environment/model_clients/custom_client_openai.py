@@ -6,6 +6,8 @@ from autogen_core.tools import Tool, ToolSchema
 from openai import OpenAI
 from openai.types.responses import FunctionToolParam
 
+from spoox.environment.model_clients.custom_response_types import CreateResultOpenAI
+
 
 class CustomOpenAIResponseAPIClient:
     # todo cleanup
@@ -35,7 +37,7 @@ class CustomOpenAIResponseAPIClient:
             messages: Sequence[LLMMessage],
             tools: Sequence[Tool | ToolSchema] = [],
             cancellation_token: Optional[CancellationToken] = None,
-    ) -> CreateResult:
+    ) -> CreateResultOpenAI:
 
         # parse messages
         parsed_messages = list()
@@ -51,6 +53,8 @@ class CustomOpenAIResponseAPIClient:
                     "role": "developer",
                     "content": m.content,
                 })
+            elif m.type == 'AssistantMessageOpenAI':
+                parsed_messages.extend(m.response_items)
             elif m.type == 'AssistantMessage':
                 if isinstance(m.thought, str) and m.thought:
                     parsed_messages.append({
@@ -80,6 +84,10 @@ class CustomOpenAIResponseAPIClient:
             else:
                 raise ValueError(f"Unexpected message type: {m.type}")
 
+        for m in parsed_messages:
+            print(m)
+
+
         # parse tools
         parsed_tools = list()
         for t in tools:
@@ -98,7 +106,6 @@ class CustomOpenAIResponseAPIClient:
             model=self._model_id,
             input=parsed_messages,
             tools=parsed_tools,
-            store=False,
             reasoning={"effort": "high"}
         )
 
@@ -112,6 +119,8 @@ class CustomOpenAIResponseAPIClient:
         self.completion_tokens += completion_tokens
 
         # parse response
+        for f in response.output:
+            print(f)
         func_calls: list[FunctionCall] = list()
         output_texts: list[str] = list()
         thoughts: list[str] = list()
@@ -130,7 +139,7 @@ class CustomOpenAIResponseAPIClient:
                 raise ValueError(f"Unknown response.output type {item.type} - {item}")
 
         if len(func_calls) > 0:
-            return CreateResult(
+            return CreateResultOpenAI(
                 finish_reason="function_calls",
                 content=func_calls,
                 usage=RequestUsage(
@@ -138,9 +147,10 @@ class CustomOpenAIResponseAPIClient:
                     completion_tokens=completion_tokens,
                 ),
                 cached=False,
-                thought='; \n\n'.join(output_texts + thoughts)
+                thought='; \n\n'.join(output_texts + thoughts),
+                response_items=response.output
             )
-        return CreateResult(
+        return CreateResultOpenAI(
             finish_reason="stop",
             content='; \n\n'.join(output_texts),
             usage=RequestUsage(
@@ -148,5 +158,6 @@ class CustomOpenAIResponseAPIClient:
                 completion_tokens=completion_tokens,
             ),
             cached=False,
-            thought='; \n\n'.join(thoughts)
+            thought='; \n\n'.join(thoughts),
+            response_items=response.output
         )
