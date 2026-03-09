@@ -1,13 +1,18 @@
 import os
 from enum import Enum
 
-from autogen_core.models import ChatCompletionClient, ModelFamily
+from autogen_core.models import ChatCompletionClient, ModelFamily, AssistantMessage
 from autogen_ext.models.anthropic import AnthropicChatCompletionClient
 from autogen_ext.models.ollama import OllamaChatCompletionClient
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 
 from spoox.environment.model_clients.custom_client_openai import CustomOpenAIResponseAPIClient
 
+
+class AssistantMessageOpenAI(AssistantMessage):
+    """AutoGen AssistantMessage extended by openai response API context."""
+
+    
 
 class ModelClientId(Enum):
     """All available model client ids."""

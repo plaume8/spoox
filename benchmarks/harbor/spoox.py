@@ -46,7 +46,7 @@ class Spoox(BaseInstalledAgent):
         """
         Path to the jinja template script for installing the spoox agent in the container.
         """
-        return Path(__file__).parent / "install_spoox.sh"
+        return Path(__file__).parent / "install_spoox_new.sh"
 
     def create_run_agent_commands(self, instruction: str) -> list[ExecInput]:
         """
