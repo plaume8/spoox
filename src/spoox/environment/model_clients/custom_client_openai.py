@@ -102,7 +102,7 @@ class CustomOpenAIResponseAPIClient:
             model=self._model_id,
             input=parsed_messages,
             tools=parsed_tools,
-            reasoning={"effort": "xhigh"},
+            reasoning={"effort": "high"},
             store=True,
             max_output_tokens=100000,
         )
