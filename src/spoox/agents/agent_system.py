@@ -39,7 +39,7 @@ class AgentSystem(ABC):
 
         timestamp = datetime.now().strftime("%Y-%m-%d__%H-%M-%S")
         self.logs_dir = logs_dir / f"spoox_logs_{timestamp}"
-        self.logs_dir.mkdir(parents=True)
+        self.logs_dir.mkdir(parents=True, exist_ok=True)
         self.usage_stats = dict()
         self.init_usage_stats()
 

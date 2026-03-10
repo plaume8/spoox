@@ -5,8 +5,6 @@ ln -sf /usr/bin/pip3 /usr/bin/pip
 
 apt install -q -y tmux
 
-python3 -m venv /opt/venv
-. /opt/venv/bin/activate
 pip install spoox
 
 python --version
