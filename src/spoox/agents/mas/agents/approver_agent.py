@@ -29,6 +29,6 @@ class ApproverAgent(BaseGroupChatAgent):
             system_message=system_message,
             agent_system=agent_system,
             next_agent_topic_types=next_agent_topic_types,
-            max_internal_iterations=100,
+            max_internal_iterations=200,
             only_track_user_messages=True
         )

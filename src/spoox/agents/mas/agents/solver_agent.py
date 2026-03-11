@@ -25,5 +25,5 @@ class SolverAgent(BaseGroupChatAgent):
             system_message=system_message,
             agent_system=agent_system,
             next_agent_topic_types=[tester_agent_topic_type],
-            max_internal_iterations=100,
+            max_internal_iterations=200,
         )

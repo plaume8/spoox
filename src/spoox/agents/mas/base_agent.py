@@ -37,6 +37,7 @@ class BaseGroupChatAgent(RoutedAgent):
             fallback_agent_topic_type: str = None,
             reset_on_request_to_speak: bool = True,
             only_track_user_messages: bool = False,
+            skip: bool = False # todo remove
     ) -> None:
         """
         Base agent class used to build agents following the concepts and design principles of the spoox framework.
@@ -50,6 +51,7 @@ class BaseGroupChatAgent(RoutedAgent):
             fallback_agent_topic_type (str): Topic type of the agent to be invoked if this agent fails.
             reset_on_request_to_speak (bool): If True, internal messages are cleared from the chat history each time the agent is called, while group chat messages remain.
             only_track_user_messages (bool): If True, the agent's group chat history only keeps track of user messages.
+            skip (bool): If True and if the agent is called, it just returns.
         """
 
         super().__init__(description=description)
@@ -58,6 +60,7 @@ class BaseGroupChatAgent(RoutedAgent):
         self._fallback_agent_topic_type = fallback_agent_topic_type
         self._reset_on_request_to_speak = reset_on_request_to_speak
         self._only_track_user_messages = only_track_user_messages
+        self._skip = skip  # todo remove
 
         self._environment = agent_system.environment
         self._model_client = agent_system.model_client
@@ -102,6 +105,8 @@ class BaseGroupChatAgent(RoutedAgent):
         Agent is requested to speak: parts of its internal state are reset, and the internal execution loop is started.
         Furthermore, if the agent loop throws errors, they are caught and logged, and a fallback mechanism is triggered.
         """
+        if self._skip:
+            return # todo remove
 
         # ensures the env is fully reset to prevent any influence from previous agents that used the same env
         if self._environment:

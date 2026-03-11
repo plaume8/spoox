@@ -61,7 +61,7 @@ class PythonTool(BaseTool[CodeExecutionInput, CodeExecutionResult], Component[Py
 
     component_config_schema = PythonToolConfig
 
-    def __init__(self, executor: CodeExecutor, output_max: int = 20000):
+    def __init__(self, executor: CodeExecutor, output_max: int = 10000):
         super().__init__(
             CodeExecutionInput,
             CodeExecutionResult,

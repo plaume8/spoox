@@ -58,7 +58,7 @@ class ShellTool(BaseTool[CodeExecutionInput, CodeExecutionResult], Component[She
 
     component_config_schema = ShellToolConfig
 
-    def __init__(self, executor: CodeExecutor, output_max: int = 20000):
+    def __init__(self, executor: CodeExecutor, output_max: int = 10000):
         super().__init__(
             CodeExecutionInput,
             CodeExecutionResult,
