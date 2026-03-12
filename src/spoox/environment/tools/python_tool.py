@@ -25,14 +25,12 @@ class CodeExecutionInput(BaseModel):
     """Input object for PythonTool."""
 
     code: str = Field(description="The Python code block that should be executed.")
-
-    # todo test if timeout should be added
-    # timeout: int = Field(
-    #    description="Maximum duration (in seconds) the code may run. "
-    #                "Define only if you want to increase the default timeout of 20s. "
-    #                "Timeout value must not exceed 120s.",
-    #    default=20
-    # )
+    timeout: int = Field(
+       description="(Optional) Maximum duration (in seconds) the code may run. "
+                   "Define only if you want to increase the default timeout of 10s. "
+                   "Timeout value must not exceed 60s.",
+       default=10
+    )
 
 
 class CodeExecutionResult(BaseModel):
@@ -73,7 +71,7 @@ class PythonTool(BaseTool[CodeExecutionInput, CodeExecutionResult], Component[Py
 
     async def run(self, args: CodeExecutionInput, cancellation_token: CancellationToken) -> CodeExecutionResult:
         # execute code
-        code_block = CodeBlockTimeout(code=args.code, language="python", timeout=60)  # timeout=args.timeout # todo test if timeout should be added
+        code_block = CodeBlockTimeout(code=args.code, language="python", timeout=args.timeout)
         result = await self._executor.execute_code_blocks(
             code_blocks=[code_block], cancellation_token=cancellation_token
         )

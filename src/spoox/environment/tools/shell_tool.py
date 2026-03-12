@@ -24,12 +24,12 @@ class CodeExecutionInput(BaseModel):
     """Input object for ShellTool."""
 
     command: str = Field(description="The Bash command that should be executed in the shell.")
-    # timeout: int = Field(
-    #    description="Maximum duration (in seconds) the command may run. "
-    #                "Define only if you want to increase the default timeout of 20s. "
-    #                "Timeout value must not exceed 120s.",
-    #    default=20
-    # )
+    timeout: int = Field(
+       description="(Optional) Maximum duration (in seconds) the command may run. "
+                   "Define only if you want to increase the default timeout of 10s. "
+                   "Timeout value must not exceed 60s.",
+       default=10
+    )
 
 
 class CodeExecutionResult(BaseModel):
@@ -70,7 +70,7 @@ class ShellTool(BaseTool[CodeExecutionInput, CodeExecutionResult], Component[She
 
     async def run(self, args: CodeExecutionInput, cancellation_token: CancellationToken) -> CodeExecutionResult:
         # execute code
-        code_block = CodeBlockTimeout(code=args.command, language="bash", timeout=60)  # args.timeout
+        code_block = CodeBlockTimeout(code=args.command, language="bash", timeout=args.timeout)
         result = await self._executor.execute_code_blocks(
             code_blocks=[code_block], cancellation_token=cancellation_token
         )

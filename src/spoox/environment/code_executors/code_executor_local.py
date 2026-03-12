@@ -19,8 +19,8 @@ class CodeBlockTimeout(CodeBlock):
 
 class CodeExecutorLocalConfig(BaseModel):
     """Configuration for PermanentCommandLineCodeExecutor"""
-    timeout_min: Optional[int] = 20
-    timeout_max: Optional[int] = 120
+    timeout_min: Optional[int] = 10
+    timeout_max: Optional[int] = 60
     work_dir: Optional[str] = None
 
 
@@ -38,7 +38,7 @@ class CodeExecutorLocal(CodeExecutor, Component[CodeExecutorLocalConfig]):
         "bash",
     ]
 
-    def __init__(self, timeout_min: Optional[int] = 20, timeout_max: Optional[int] = 120,
+    def __init__(self, timeout_min: Optional[int] = 10, timeout_max: Optional[int] = 60,
                  work_dir: Optional[Path] = None, user: Optional[str] = None):
         super().__init__()
 
