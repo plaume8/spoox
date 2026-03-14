@@ -23,7 +23,7 @@ def get_EXPLORER_SYSTEM_MESSAGE(agent_role: str, next_agent_topic_type: str, add
         "- It is possible that the last prior agent has left instructions for you in latest message with open topics that still need to be explored. If so, prioritize answering the other agents' exploration requests."
     ]
     _TASK_DESCR_3 = [
-        f"""- Do **not** try to solve the tasks, instead, collect only basic information that will assist later agents in planning and actively solving the task.""",
+        f"""- IMPORTANT: **Do NOT try to solve the tasks**, instead, collect only basic information that will assist later agents in planning and actively solving the task.""",
         f"""- When finished write a concise summary of only the gathered information and include the tag '[{next_agent_topic_type}]'.""",
         f"""- Include a tag in your answer only when you intend to pass it on."""
     ]

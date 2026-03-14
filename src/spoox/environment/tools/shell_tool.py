@@ -27,7 +27,7 @@ class CodeExecutionInput(BaseModel):
     timeout: int = Field(
        description="(Optional) Maximum duration (in seconds) the command may run. "
                    "Define only if you want to increase the default timeout of 10s. "
-                   "Timeout value must not exceed 60s.",
+                   "Timeout value must not exceed 90s.",
        default=10
     )
 
@@ -37,13 +37,17 @@ class CodeExecutionResult(BaseModel):
 
     output: str
     exit_code: Optional[int] = None
+    truncated: bool = False
 
     @model_serializer
     def ser_model(self) -> str:
-        if self.exit_code is None:
-            return f"<output> {self.output} </output>"
-        return f"<exit-code> {self.exit_code} </exit-code>  \n  <output> {self.output} </output>"
-
+        out = ""
+        if self.exit_code is not None:
+            out += f"<exit-code> {self.exit_code} </exit-code> \n"
+        if self.truncated:
+            out += f"<truncated-output> True </truncated-output> \n"
+        out += f"<output> {self.output} </output>"
+        return out
 
 class ShellToolConfig(BaseModel):
     """Configuration for ShellTool."""
@@ -75,8 +79,8 @@ class ShellTool(BaseTool[CodeExecutionInput, CodeExecutionResult], Component[She
             code_blocks=[code_block], cancellation_token=cancellation_token
         )
         # make sure the output is cut when too long
-        output = output_truncat(result.output, self._output_max)
-        return CodeExecutionResult(exit_code=result.exit_code, output=output)
+        output, truncated = output_truncat(result.output, self._output_max)
+        return CodeExecutionResult(exit_code=result.exit_code, output=output, truncated=truncated)
 
     def _to_config(self) -> ShellToolConfig:
         """Convert current instance to config object."""
