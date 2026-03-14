@@ -1,7 +1,7 @@
 from typing import Sequence, Optional
 
 from autogen_core import CancellationToken, FunctionCall
-from autogen_core.models import LLMMessage, CreateResult, RequestUsage
+from autogen_core.models import LLMMessage, RequestUsage
 from autogen_core.tools import Tool, ToolSchema
 from openai import OpenAI
 from openai.types.responses import FunctionToolParam
@@ -27,10 +27,7 @@ class CustomOpenAIResponseAPIClient:
         )
 
     def total_usage(self) -> RequestUsage:
-        return RequestUsage(
-            prompt_tokens=self.prompt_tokens,
-            completion_tokens=self.completion_tokens
-        )
+        return self.actual_usage()
 
     async def create(
             self,
@@ -45,41 +42,33 @@ class CustomOpenAIResponseAPIClient:
 
             if m.type == 'UserMessage':
                 parsed_messages.append({
+                    "type": "message",
                     "role": "user",
                     "content": m.content,
                 })
             elif m.type == 'SystemMessage':
                 parsed_messages.append({
+                    "type": "message",
                     "role": "developer",
                     "content": m.content,
                 })
             elif m.type == 'AssistantMessageOpenAI':
                 parsed_messages.extend(m.response_items)
-            elif m.type == 'AssistantMessage':
-                if isinstance(m.thought, str) and m.thought:
-                    parsed_messages.append({
-                        "role": "assistant",
-                        "content": m.thought
-                    })
-                if isinstance(m.content, str):
-                    parsed_messages.append({
-                        "role": "assistant",
-                        "content": m.content
-                    })
-                else:  # function calls
-                    for function_call in m.content:
-                        parsed_messages.append({
-                            "type": "function_call",
-                            "arguments": function_call.arguments,
-                            "call_id": function_call.id,
-                            "name": function_call.name,
-                        })
+            elif m.type == 'AssistantMessage' and isinstance(m.content, str):
+                # if it is an AssistantMessage and no AssistantMessageOpenAI -> it always only contains
+                # the summary of the previous agent
+                parsed_messages.append({
+                    "type": "message",
+                    "role": "assistant",
+                    "content": m.content,
+                    "phase": "commentary"
+                })
             elif m.type == 'FunctionExecutionResultMessage':
-                for f in m.content:
+                for fR in m.content:
                     parsed_messages.append({
                         "type": "function_call_output",
-                        "call_id": f.call_id,
-                        "output": f.content,
+                        "call_id": fR.call_id,
+                        "output": fR.content,
                     })
             else:
                 raise ValueError(f"Unexpected message type: {m.type}")
@@ -105,6 +94,7 @@ class CustomOpenAIResponseAPIClient:
             reasoning={"effort": "high"},
             store=True,
             max_output_tokens=100000,
+            parallel_tool_calls=False,
         )
 
         # parse token usage
@@ -143,17 +133,17 @@ class CustomOpenAIResponseAPIClient:
                     completion_tokens=completion_tokens,
                 ),
                 cached=False,
-                thought='; \n\n'.join(output_texts + thoughts),
+                thought=';\n'.join(output_texts + thoughts),
                 response_items=response.output
             )
         return CreateResultOpenAI(
             finish_reason="stop",
-            content='; \n\n'.join(output_texts),
+            content=';\n'.join(output_texts),
             usage=RequestUsage(
                 prompt_tokens=prompt_tokens,
                 completion_tokens=completion_tokens,
             ),
             cached=False,
-            thought='; \n\n'.join(thoughts),
+            thought=';\n'.join(thoughts),
             response_items=response.output
         )

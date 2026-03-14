@@ -26,7 +26,7 @@ class CodeExecutionInput(BaseModel):
     command: str = Field(description="The Bash command that should be executed in the shell.")
     timeout: int = Field(
        description="(Optional) Maximum duration (in seconds) the command may run. "
-                   "Define only if you want to increase the default timeout of 10s. "
+                   "Define this only if you need to increase the default timeout of 10s. "
                    "Timeout value must not exceed 90s.",
        default=10
     )
@@ -48,6 +48,7 @@ class CodeExecutionResult(BaseModel):
             out += f"<truncated-output> True </truncated-output> \n"
         out += f"<output> {self.output} </output>"
         return out
+
 
 class ShellToolConfig(BaseModel):
     """Configuration for ShellTool."""

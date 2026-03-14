@@ -27,7 +27,7 @@ class CodeExecutionInput(BaseModel):
     code: str = Field(description="The Python code block that should be executed.")
     timeout: int = Field(
        description="(Optional) Maximum duration (in seconds) the code may run. "
-                   "Define only if you want to increase the default timeout of 10s. "
+                   "Define this only if you need to increase the default timeout of 10s. "
                    "Timeout value must not exceed 90s.",
        default=10
     )
