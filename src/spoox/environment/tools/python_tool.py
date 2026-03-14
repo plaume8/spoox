@@ -69,8 +69,7 @@ class PythonTool(BaseTool[CodeExecutionInput, CodeExecutionResult], Component[Py
             CodeExecutionInput,
             CodeExecutionResult,
             "PythonExecutor",
-            "Run a Python code block once in the users current directory.",
-            strict=True
+            "Run a Python code block once in the users current directory."
         )
         self._executor = executor
         self._output_max = output_max
