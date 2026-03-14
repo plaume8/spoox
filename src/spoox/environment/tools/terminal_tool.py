@@ -81,7 +81,8 @@ class TerminalTool(BaseTool[TerminalInput, TerminalResult], Component[TerminalTo
                 "Supports both shell commands and interactive commands that follow the tmux tokens format; "
                 "tmux token examples: C-a, C-b, C-c, C-l, Tab, Space, Home, End, Insert, Delete, Up, Down, Left, Right, Escape. "
                 "Especially ideal for running and controlling interactive terminal programs such as 'git log' or 'vim'."
-            )
+            ),
+            strict=True
         )
         self.tmux_session_name = None
         self._session = None

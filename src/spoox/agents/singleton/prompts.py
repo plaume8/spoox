@@ -5,7 +5,7 @@ def get_SINGLETON_SYSTEM_PROMPT(finished_tag: str, additional_tool_descriptions:
 
     _CONTEXT = [
         f"""""",
-        f"""## Context""",
+        f"""# Context""",
         f"""- You are a helpful agent that solves server and command-line related tasks.""",
         f"""- You and the user operate on the same system.""",
         f"""- Once the user provides a task, complete the task using the provided information, without returning to the user for clarification.""",
@@ -13,7 +13,7 @@ def get_SINGLETON_SYSTEM_PROMPT(finished_tag: str, additional_tool_descriptions:
 
     _TASK_DESCR = [
         f"""""",
-        f"""## Task Description""",
+        f"""# Role and Task Description""",
         f"""- Your job is to **actively** complete the user’s task using the available tools.""",
         f"""- Continue working until the task is done or no further contribution is possible.""",
         f"""- When finished, or if no more progress can be made, write a summary of what you did and include the tag '[{finished_tag}]'.""",
@@ -22,7 +22,7 @@ def get_SINGLETON_SYSTEM_PROMPT(finished_tag: str, additional_tool_descriptions:
 
     _FLOW = [
         f"""""",
-        f"""## Flow""",
+        f"""# Flow""",
         f"""- Follow this general procedure step by step; each step should be completed at least once.""",
         f"""- Take one step at a time, move sequentially, though you may revisit earlier steps if necessary.""",
         f"""- General Procedure:""",

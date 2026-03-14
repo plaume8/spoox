@@ -68,7 +68,8 @@ class ShellTool(BaseTool[CodeExecutionInput, CodeExecutionResult], Component[She
             CodeExecutionInput,
             CodeExecutionResult,
             "Shell",
-            "Execute a Bash command in the shell, in the users current directory."
+            "Execute a Bash command in the shell, in the users current directory.",
+            strict=True
         )
         self._executor = executor
         self._output_max = output_max

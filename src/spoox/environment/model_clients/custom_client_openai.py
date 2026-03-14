@@ -93,7 +93,7 @@ class CustomOpenAIResponseAPIClient:
             tools=parsed_tools,
             reasoning={"effort": "high"},
             store=True,
-            max_output_tokens=100000,
+            max_output_tokens=40000,
             parallel_tool_calls=False,
         )
 
@@ -105,6 +105,10 @@ class CustomOpenAIResponseAPIClient:
             completion_tokens += response.usage.output_tokens
         self.prompt_tokens += prompt_tokens
         self.completion_tokens += completion_tokens
+
+        if response.status == "incomplete" and response.incomplete_details.reason == "max_output_tokens":
+            print("Ran out of tokens")  # todo check and delete
+
 
         # parse response
         func_calls: list[FunctionCall] = list()
