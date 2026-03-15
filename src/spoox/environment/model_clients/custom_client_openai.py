@@ -104,10 +104,6 @@ class CustomOpenAIResponseAPIClient:
         self.prompt_tokens += prompt_tokens
         self.completion_tokens += completion_tokens
 
-        if response.status == "incomplete" and response.incomplete_details.reason == "max_output_tokens":
-            print("Ran out of tokens")  # todo check and delete
-
-
         # parse response
         func_calls: list[FunctionCall] = list()
         output_texts: list[str] = list()
