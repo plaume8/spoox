@@ -39,7 +39,6 @@ class CustomOpenAIResponseAPIClient:
         # parse messages
         parsed_messages = list()
         for m in messages:
-
             if m.type == 'UserMessage':
                 parsed_messages.append({
                     "type": "message",
@@ -93,8 +92,7 @@ class CustomOpenAIResponseAPIClient:
             tools=parsed_tools,
             reasoning={"effort": "high"},
             store=True,
-            max_output_tokens=40000,
-            parallel_tool_calls=False,
+            max_output_tokens=40000
         )
 
         # parse token usage
