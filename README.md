@@ -3,6 +3,8 @@
 
 # SPOOX
 
+> The next version of spoox ('spoox-o-m') will be released soon.
+
 **SPOOX – SPlit lOOp eXpand**
 
 A terminal-integrated, LLM-powered multi-agent system (MAS) designed to assist developers directly within their terminal.
