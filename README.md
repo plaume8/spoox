@@ -12,9 +12,10 @@ _Spoox CLI_ provides intelligent assistance for OS tasks, server management work
 The architectures of these agent systems are based on the _spoox_ MAS design framework,
 a generic architectural framework for multi-agent topology and communication design. 
 
-Several differently scaled terminal MAS variants have been developed and are accessible through a terminal CLI: _spoox-s_, _spoox-m_, and _spoox-l_.
-The spoox-m variant achieved first place on the [Terminal Bench leaderboard](https://www.tbench.ai/leaderboard/terminal-bench/2.0?models=GPT-5-Mini) 
-for the gpt-5-mini model and is therefore used as the default configuration for the _spoox CLI_.
+Several MAS variants at different scales have been developed and are accessible through the spoox CLI: _spoox-s_, _spoox-m_, and _spoox-l_.
+
+The spoox-m variant achieved first place on the Terminal Bench leaderboard
+for the [gpt-5-mini](https://www.tbench.ai/leaderboard/terminal-bench/2.0?models=GPT-5-Mini) and [gpt-5-nano](https://www.tbench.ai/leaderboard/terminal-bench/2.0?models=GPT-5-Nano) models and is therefore used as the default configuration for the _spoox CLI_. Additionally, it achieved a mid-level ranking for the [gpt-5.3-codex](https://www.tbench.ai/leaderboard/terminal-bench/2.0?models=GPT-5.3-Codex) model.
 
 <br>
 
