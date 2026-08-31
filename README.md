@@ -1,10 +1,6 @@
 
 <img src="_others/spoox_transparent_icon_512x512.png" width="40" />
 
-[![PyPI](https://img.shields.io/pypi/v/common-fetch-loader)](https://pypi.org/project/common-fetch-loader/)
-[![Python](https://img.shields.io/pypi/pyversions/common-fetch-loader)](https://pypi.org/project/common-fetch-loader/)
-[![License](https://img.shields.io/pypi/l/common-fetch-loader)](LICENSE)
-
 # SPOOX
 
 > The next version of spoox ('spoox-o-m') will be released soon.
