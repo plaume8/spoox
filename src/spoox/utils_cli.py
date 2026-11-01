@@ -13,7 +13,8 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 
 from spoox.environment.local_environment import ConfirmationMode
-from spoox.utils import AgentSystemId, ModelClientId
+from spoox.utils import AgentSystemId
+from spoox.environment.model_clients.utils import ModelClientId
 
 _console = Console()
 _spinner = None

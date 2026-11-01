@@ -20,7 +20,7 @@ class ExecInput(BaseModel):
 _AGENT_ID = "spoox-m"  # "singleton",'spoox-s','spoox-m','spoox-l'
 _AGENT_ID_CHAR = "m"  # "singleton",'s','m','l'
 _MODEL_CLIENT_ID = "openai"  # "ollama", "openai", "anthropic"
-_MODEL_ID = "gpt-5-mini"  # "gpt-oss:20b","qwen3:14b","claude-sonnet-4-5","magistral:24b","gpt-5","gpt-5-mini","gpt-5-nano"
+_MODEL_ID = "gpt-5.4-2026-03-05"  # "gpt-5.4-2026-03-05", "gpt-5.3-codex", "gpt-oss:20b","qwen3:14b","claude-sonnet-4-5","magistral:24b","gpt-5","gpt-5-mini","gpt-5-nano"
 
 # harbor automatically copies the /logs/agent directory to local Harbor logs;
 # as a result, spoox logs are automatically copied as well.
@@ -34,6 +34,7 @@ class Spoox(BaseInstalledAgent):
     Compliant with https://harborframework.com/docs/agents#installed-agents.
 
     run with: `harbor run -d terminal-bench@2.0 -a /benchmarks/harbor/spoox`
+    run with: `harbor run -d terminal-bench@2.0 --agent-import-path "benchmarks.harbor.spoox:Spoox" -k 1`
     """
 
     @staticmethod
@@ -55,8 +56,8 @@ class Spoox(BaseInstalledAgent):
         load_dotenv()
         openai_api_key = str(os.environ.get("OPENAI_API_KEY"))
         safe_instruction = shlex.quote(instruction)
-        confirmation_mode = 'confirmation'
-        cmd = (f". /opt/venv/bin/activate && spoox-h "
+        confirmation_mode = 'no_confirmation'
+        cmd = (f"spoox-h "
                f"-c {_MODEL_CLIENT_ID} -m {_MODEL_ID} -a {_AGENT_ID} -l {_DOCKER_LOGS_DIR} -x {_AGENT_MAX_TIMEOUT} "
                f"-s {confirmation_mode} -t {safe_instruction}")
         return [ExecInput(command=cmd, env={"OPENAI_API_KEY": openai_api_key})]

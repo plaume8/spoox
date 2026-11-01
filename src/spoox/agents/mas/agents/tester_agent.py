@@ -30,5 +30,5 @@ class TesterAgent(BaseGroupChatAgent):
             system_message=system_message,
             agent_system=agent_system,
             next_agent_topic_types=[previous_agent_topic_type, next_agent_topic_type],
-            max_internal_iterations=100,
+            max_internal_iterations=200,
         )

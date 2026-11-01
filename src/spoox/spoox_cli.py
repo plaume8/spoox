@@ -9,7 +9,8 @@ from dotenv import load_dotenv
 from spoox.environment import LocalEnvironment
 from spoox.environment.local_environment import ConfirmationMode
 from spoox.interface import CLInterface
-from spoox.utils import setup_model_client, setup_agent_system, ModelClientId, AgentSystemId
+from spoox.utils import setup_agent_system, AgentSystemId
+from spoox.environment.model_clients.utils import setup_model_client, ModelClientId
 from spoox.utils_cli import CONFIG_FORM, confirm_cli_config, print_cli_header, start_loading, stop_loading, \
     print_cli_footer, print_error_message
 

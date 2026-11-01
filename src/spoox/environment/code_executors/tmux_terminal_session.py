@@ -94,7 +94,7 @@ class TmuxTerminalSession:
     def clear_history(self):
         """Clear terminal screen history."""
         self.send_line("clear")
-        time.sleep(1)  # todo can be done better
+        time.sleep(2)  # todo can be done better
         self._tmux("clear-history", "-t", self.target)
 
     def kill_session(self):

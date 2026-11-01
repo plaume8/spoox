@@ -21,4 +21,5 @@ class SummarizerAgent(BaseGroupChatAgent):
             system_message=get_SUMMARIZER_SYSTEM_MESSAGE(topic_type),
             agent_system=agent_system,
             max_internal_iterations=10,
+            skip=True  # todo remove
         )

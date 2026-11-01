@@ -1,16 +1,15 @@
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Any
+from typing import Optional
 
 from autogen_core import BaseAgent, FunctionCall
 from autogen_core.tools import BaseTool
-from autogen_ext.tools.code_execution import PythonCodeExecutionTool
 from autogen_ext.tools.langchain import LangChainToolAdapter
 from langchain_community.tools import DuckDuckGoSearchResults
 
 from spoox.environment import Environment
 from spoox.environment.code_executors import CodeExecutorLocal
-from spoox.environment.tools import ShellTool
+from spoox.environment.tools import ShellTool, PythonTool
 from spoox.environment.tools import TerminalTool
 from spoox.interface import Interface
 
@@ -38,7 +37,7 @@ class LocalEnvironment(Environment):
 
         self._shell_tool = ShellTool(self._code_executor)
         self._terminal_tool = TerminalTool()
-        self._python_tool = PythonCodeExecutionTool(self._code_executor)
+        self._python_tool = PythonTool(self._code_executor)
         self._search_tool = LangChainToolAdapter(DuckDuckGoSearchResults(output_format="list"))
 
     async def start(self):
@@ -70,7 +69,7 @@ class LocalEnvironment(Environment):
             return [self._shell_tool, self._search_tool, self._terminal_tool]
         elif class_name in ["SolverAgent", "SubTaskSolverAgent", "RefinerAgent"]:
             return [self._shell_tool, self._python_tool, self._terminal_tool, self._search_tool]
-        elif class_name in ["TesterAgent"]:
+        elif class_name in ["TesterAgent", "ApproverAgent"]:
             return [self._shell_tool, self._python_tool, self._terminal_tool]
         # default: return no tools (e.g. Approver, Summarizer, ...)
         return []
@@ -92,7 +91,7 @@ class LocalEnvironment(Environment):
             return [shell_descr, terminal_descr]
         elif class_name in ["SolverAgent", "SubTaskSolverAgent", "RefinerAgent"]:
             return [shell_descr, py_descr, terminal_descr]
-        elif class_name in ["TesterAgent"]:
+        elif class_name in ["TesterAgent", "ApproverAgent"]:
             return [shell_descr, py_descr, terminal_descr]
         # default: return no additional tool descriptions (e.g. Approver, Summarizer, ...)
         return []

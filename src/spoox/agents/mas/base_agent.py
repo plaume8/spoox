@@ -5,14 +5,13 @@ import uuid
 from typing import List, Tuple, Optional, Union
 
 from autogen_core import RoutedAgent, message_handler, MessageContext, DefaultTopicId, FunctionCall
-from autogen_core.models import SystemMessage, LLMMessage, UserMessage, AssistantMessage, \
-    FunctionExecutionResultMessage, CreateResult
+from autogen_core.models import SystemMessage, LLMMessage, AssistantMessage, FunctionExecutionResultMessage, CreateResult
 
 from spoox.agents.agent_system import AgentSystem
 from spoox.agents.errors import ModelClientError, MaxOnlyTextMessagesError, MaxIterationsError, AgentError
 from spoox.agents.mas.agents.prompts import get_AGENT_FAILED_GROUP_CHAT_MESSAGE
 from spoox.agents.mas.messages import GroupChatMessage, RequestToSpeak, GROUP_CHAT_TOPIC_TYPE
-
+from spoox.environment.model_clients.custom_response_types import CreateResultOpenAI, AssistantMessageOpenAI
 
 # to ensure progress and prevent endless text-only replies, a limit on consecutive text-only messages is enforced
 MAX_ONLY_TEXT_MESSAGES = 3
@@ -36,7 +35,9 @@ class BaseGroupChatAgent(RoutedAgent):
             next_agent_topic_types: list[str] = None,
             max_internal_iterations: int = 50,
             fallback_agent_topic_type: str = None,
-            reset_on_request_to_speak: bool = False,  # todo should be True ?
+            reset_on_request_to_speak: bool = True,
+            only_track_user_messages: bool = False,
+            skip: bool = False # todo remove
     ) -> None:
         """
         Base agent class used to build agents following the concepts and design principles of the spoox framework.
@@ -49,6 +50,8 @@ class BaseGroupChatAgent(RoutedAgent):
             max_internal_iterations (int): Maximum number of internal iterations the agent may perform, corresponding to the maximum number of LLM calls.
             fallback_agent_topic_type (str): Topic type of the agent to be invoked if this agent fails.
             reset_on_request_to_speak (bool): If True, internal messages are cleared from the chat history each time the agent is called, while group chat messages remain.
+            only_track_user_messages (bool): If True, the agent's group chat history only keeps track of user messages.
+            skip (bool): If True and if the agent is called, it just returns.
         """
 
         super().__init__(description=description)
@@ -56,6 +59,8 @@ class BaseGroupChatAgent(RoutedAgent):
         self._max_internal_iterations = max_internal_iterations
         self._fallback_agent_topic_type = fallback_agent_topic_type
         self._reset_on_request_to_speak = reset_on_request_to_speak
+        self._only_track_user_messages = only_track_user_messages
+        self._skip = skip  # todo remove
 
         self._environment = agent_system.environment
         self._model_client = agent_system.model_client
@@ -84,8 +89,10 @@ class BaseGroupChatAgent(RoutedAgent):
         the chat history is simply replaced with `_chat_history_group_chat_only`,
         so that only group chat messages are retained and all internal iteration messages are discarded.
         """
+        if self._only_track_user_messages and message.body.source.lower() != 'user':
+            return
         new_messages = [
-            UserMessage(content=f"Transferred to {message.body.source.capitalize()} agent.", source="system"),
+            SystemMessage(content=f"Transferred to {message.body.source.capitalize()} agent."),
             message.body,
         ]
         self._chat_history_group_chat_only.extend(new_messages)
@@ -98,6 +105,8 @@ class BaseGroupChatAgent(RoutedAgent):
         Agent is requested to speak: parts of its internal state are reset, and the internal execution loop is started.
         Furthermore, if the agent loop throws errors, they are caught and logged, and a fallback mechanism is triggered.
         """
+        if self._skip:
+            return # todo remove
 
         # ensures the env is fully reset to prevent any influence from previous agents that used the same env
         if self._environment:
@@ -111,14 +120,15 @@ class BaseGroupChatAgent(RoutedAgent):
 
         # add a system message that instructs the model to adopt this agent's persona
         self._chat_history.append(
-            UserMessage(
-                content=f"Transferred to {self.id.type.capitalize()} agent, adopt the persona immediately.",
-                source="system"
-            )
+            SystemMessage(content=f"Transferred to {self.id.type.capitalize()} agent, adopt the persona immediately.")
         )
 
         # additional chat history logging
-        logging_chat_hist = ' -> '.join([f"[{str(h.content)[:60].replace('\n', '')}…]" for h in self._chat_history])
+        logging_chat_hist = ' -> '.join(
+            f"[{cleaned[:60]}…]"
+            for h in self._chat_history
+            for cleaned in [str(h.content or "").replace("\n", "").replace("\\", "")]
+        )
         self._interface.print_logging('[start] -> ' + logging_chat_hist, f"logging - {self.id.type} - chat history")
 
         # run the agent's internal loop;
@@ -173,8 +183,13 @@ class BaseGroupChatAgent(RoutedAgent):
             content = llm_res.content
 
             # add the response to session and print thoughts if available
-            self._chat_history.append(
-                AssistantMessage(content=content, thought=llm_res.thought, source=self.id.type))
+            if isinstance(llm_res, CreateResultOpenAI):
+                self._chat_history.append(
+                    AssistantMessageOpenAI(content=content, thought=llm_res.thought,
+                                           source=self.id.type, response_items=llm_res.response_items))
+            else:
+                self._chat_history.append(
+                    AssistantMessage(content=content, thought=llm_res.thought, source=self.id.type))
             if llm_res.thought:
                 self._interface.print_thought(llm_res.thought, f"{self.id.type} - thoughts")
 
@@ -205,6 +220,14 @@ class BaseGroupChatAgent(RoutedAgent):
             # check if MAX_ONLY_TEXT_MESSAGES is reached
             counter_only_text_messages += 1
             if counter_only_text_messages > MAX_ONLY_TEXT_MESSAGES:
+                if counter_only_text_messages == 2:
+                    # additional reminder after 2 only_text_messages
+                    tags = ', '.join([f"[{f}]" for f in self._next_agent_topic_types])
+                    self._chat_history.append(SystemMessage(
+                        content=f"Remember: do not ask the user for feedback or confirmation. "
+                                f"Do your work as best as possible. When you believe your task is complete, "
+                                f"call the appropriate next agent using one of the predefined tags (available tags: {tags})"
+                    ))
                 raise MaxOnlyTextMessagesError(self.id.type, MAX_ONLY_TEXT_MESSAGES)
 
         raise MaxIterationsError(self.id.type, self._max_internal_iterations)
@@ -254,8 +277,8 @@ class BaseGroupChatAgent(RoutedAgent):
         """Checks if the message includes an agent tag and returns the first match detected."""
 
         for nt in self._next_agent_topic_types:
-            patter = rf"\[[^\]]*{re.escape(nt)}[^\]]*\]"
-            if re.search(patter, message, flags=re.IGNORECASE):
+            pattern = rf"\[[^\]]*{re.escape(nt)}[^\]]*\]"
+            if re.search(pattern, message, flags=re.IGNORECASE):
                 self._usage_stats['next_agent_calling_chain'].append(nt)
                 return nt
         return None
@@ -265,7 +288,7 @@ class BaseGroupChatAgent(RoutedAgent):
         await self.publish_message(
             message=GroupChatMessage(
                 nonce=str(uuid.uuid4()),
-                body=UserMessage(content=message, source=self.id.type)
+                body=AssistantMessage(content=message, source=self.id.type),
             ),
             topic_id=DefaultTopicId(type=GROUP_CHAT_TOPIC_TYPE),
         )
@@ -276,6 +299,9 @@ class BaseGroupChatAgent(RoutedAgent):
         )
 
     async def _send_group_chat_message_and_request_to_speak(self, message: str, agent_type: str):
+        # remove tag from message
+        pattern = rf"\[[^\]]*{re.escape(agent_type)}[^\]]*\]"
+        message = re.sub(pattern, "", message)
         await self._send_group_chat_message(message)
         # 0.1 delay to ensure the GroupChatMessage can be observed before the RequestToSpeak
         # (I think it is not required, however, it certainly does not hurt)

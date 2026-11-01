@@ -24,12 +24,12 @@ class CodeExecutionInput(BaseModel):
     """Input object for ShellTool."""
 
     command: str = Field(description="The Bash command that should be executed in the shell.")
-    # timeout: int = Field(
-    #    description="Maximum duration (in seconds) the command may run. "
-    #                "Define only if you want to increase the default timeout of 20s. "
-    #                "Timeout value must not exceed 120s.",
-    #    default=20
-    # )
+    timeout: int = Field(
+       description="(Optional) Maximum duration (in seconds) the command may run. "
+                   "Define this only if you need to increase the default timeout of 10s. "
+                   "Timeout value must not exceed 90s.",
+       default=10
+    )
 
 
 class CodeExecutionResult(BaseModel):
@@ -37,12 +37,17 @@ class CodeExecutionResult(BaseModel):
 
     output: str
     exit_code: Optional[int] = None
+    truncated: bool = False
 
     @model_serializer
     def ser_model(self) -> str:
-        if self.exit_code is None:
-            return f"<output> {self.output} </output>"
-        return f"<exit-code> {self.exit_code} </exit-code>  \n  <output> {self.output} </output>"
+        out = ""
+        if self.exit_code is not None:
+            out += f"<exit-code> {self.exit_code} </exit-code> \n"
+        if self.truncated:
+            out += f"<truncated-output> True </truncated-output> \n"
+        out += f"<output> {self.output} </output>"
+        return out
 
 
 class ShellToolConfig(BaseModel):
@@ -58,7 +63,7 @@ class ShellTool(BaseTool[CodeExecutionInput, CodeExecutionResult], Component[She
 
     component_config_schema = ShellToolConfig
 
-    def __init__(self, executor: CodeExecutor, output_max: int = 20000):
+    def __init__(self, executor: CodeExecutor, output_max: int = 10000):
         super().__init__(
             CodeExecutionInput,
             CodeExecutionResult,
@@ -70,13 +75,13 @@ class ShellTool(BaseTool[CodeExecutionInput, CodeExecutionResult], Component[She
 
     async def run(self, args: CodeExecutionInput, cancellation_token: CancellationToken) -> CodeExecutionResult:
         # execute code
-        code_block = CodeBlockTimeout(code=args.command, language="bash", timeout=60)  # args.timeout
+        code_block = CodeBlockTimeout(code=args.command, language="bash", timeout=args.timeout)
         result = await self._executor.execute_code_blocks(
             code_blocks=[code_block], cancellation_token=cancellation_token
         )
         # make sure the output is cut when too long
-        output = output_truncat(result.output, self._output_max)
-        return CodeExecutionResult(exit_code=result.exit_code, output=output)
+        output, truncated = output_truncat(result.output, self._output_max)
+        return CodeExecutionResult(exit_code=result.exit_code, output=output, truncated=truncated)
 
     def _to_config(self) -> ShellToolConfig:
         """Convert current instance to config object."""

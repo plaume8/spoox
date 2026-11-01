@@ -8,7 +8,8 @@ from dotenv import load_dotenv
 from spoox.environment import LocalEnvironment
 from spoox.environment.local_environment import ConfirmationMode
 from spoox.interface import LogInterface
-from spoox.utils import setup_model_client, setup_agent_system, ModelClientId, AgentSystemId
+from spoox.environment.model_clients.utils import setup_model_client, ModelClientId
+from spoox.utils import setup_agent_system, AgentSystemId
 
 nest_asyncio.apply()
 
@@ -46,11 +47,11 @@ def main() -> None:
         help="Agent id (e.g. 'singleton', 'spoox-m') (str)."
     )
     parser.add_argument(
-        "-r",
-        "--print-reasoning",
-        required=False,
-        default=True,
-        help="Print solution process in terminal (bool).",
+        "-s",
+        "--confirmation-mode",
+        required=True,
+        help="The level of confirmation the agent will seek from the user before interacting with the environment, "
+             "options: 'strict', 'self_evaluation', 'no_confirmation' (str).",
     )
     parser.add_argument(
         "-t",
@@ -59,18 +60,18 @@ def main() -> None:
         help="Task description provided to the agent system at start (str).",
     )
     parser.add_argument(
+        "-r",
+        "--print-reasoning",
+        required=False,
+        default=True,
+        help="Print solution process in terminal (bool).",
+    )
+    parser.add_argument(
         "-l",
         "--logs-dir",
         required=False,
         default="/tmp/spoox",
         help="Logs dir path (str).",
-    )
-    parser.add_argument(
-        "-s",
-        "--confirmation-mode",
-        required=True,
-        help="The level of confirmation the agent will seek from the user before interacting with the environment, "
-             "options: 'strict', 'self_evaluation', 'no_confirmation' (str).",
     )
     parser.add_argument(
         "-x",

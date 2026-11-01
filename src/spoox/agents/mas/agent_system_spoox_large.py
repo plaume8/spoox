@@ -16,6 +16,7 @@ from spoox.agents.mas.agents import SummarizerAgent
 from spoox.agents.mas.agents import TesterAgent
 from spoox.agents.mas.agents import RefinerAgent
 from spoox.environment import Environment
+from spoox.environment.model_clients.custom_client_openai import CustomOpenAIResponseAPIClient
 from spoox.interface import Interface
 
 
@@ -35,7 +36,7 @@ class SpooxLarge(AgentSystem):
     approver_topic_type = "approver"
     summarizer_topic_type = "summarizer"
 
-    def __init__(self, interface: Interface, model_client: ChatCompletionClient,
+    def __init__(self, interface: Interface, model_client: ChatCompletionClient | CustomOpenAIResponseAPIClient,
                  environment: Environment, timeout: int = 600, logs_dir: Path = Path.cwd()):
         super().__init__(interface, model_client, environment, timeout, logs_dir)
         # agents
@@ -132,7 +133,6 @@ class SpooxLarge(AgentSystem):
                 topic_type=self.approver_topic_type,
                 agent_system=self,
                 solver_agent_topic_type=self.refiner_topic_type,
-                test_agent_topic_type=self.tester_topic_type,
                 next_agent_topic_type=self.summarizer_topic_type,
             ),
         )
@@ -158,7 +158,7 @@ class SpooxLarge(AgentSystem):
         """Triggers the execution flow of the agent system's single agents, given the latest user input."""
 
         await self.runtime.publish_message(
-            message=GroupChatMessage(nonce=str(uuid.uuid4()), body=UserMessage(content=user_input, source="User")),
+            message=GroupChatMessage(nonce=str(uuid.uuid4()), body=UserMessage(content=user_input, source="user")),
             topic_id=DefaultTopicId(type=GROUP_CHAT_TOPIC_TYPE)
         )
         # 0.1 delay to ensure the GroupChatMessage can be observed before the RequestToSpeak
